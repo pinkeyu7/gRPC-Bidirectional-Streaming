@@ -13,8 +13,6 @@ import (
 )
 
 func (s *Server) RegisterFromWorker(context context.Context, req *taskProto.RegisterFromWorkerRequest) (*taskProto.RegisterFromWorkerResponse, error) {
-	log.Println(req.GetTaskIds())
-
 	for _, taskId := range req.GetTaskIds() {
 		s.taskIdWorkerMap.Store(taskId, req.GetWorkerId())
 	}
