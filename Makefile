@@ -4,8 +4,14 @@ GORUN=$(GOCMD) run
 GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
 
-run:
-	$(GORUN) main.go
+server-run:
+	$(GORUN) runner/server/main.go
+
+client-run:
+	$(GORUN) runner/client/main.go
+
+worker-run:
+	$(GORUN) runner/worker/main.go
 
 test:
 	$(GOCMD) clean -testcache
