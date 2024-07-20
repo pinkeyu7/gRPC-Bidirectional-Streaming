@@ -6,23 +6,51 @@ import (
 	"io"
 	"log"
 
+	"google.golang.org/grpc/metadata"
+
 	"google.golang.org/grpc"
 )
 
 type Client struct {
+	workerId    string
 	taskClient  taskProto.TaskClient
 	taskService Service
 }
 
-func NewClient(conn *grpc.ClientConn, ts Service) *Client {
+func NewClient(workerId string, conn *grpc.ClientConn, ts Service) *Client {
 	return &Client{
+		workerId:    workerId,
 		taskClient:  taskProto.NewTaskClient(conn),
 		taskService: ts,
 	}
 }
 
+func (c *Client) RegisterIds() error {
+	// Arrange
+	req := &taskProto.RegisterFromWorkerRequest{
+		WorkerId: c.workerId,
+		TaskIds:  c.taskService.GetIds(),
+	}
+
+	// Act
+	_, err := c.taskClient.RegisterFromWorker(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("RegisterIds success")
+
+	// Return
+	return nil
+}
+
 func (c *Client) GetInfo() {
-	stream, err := c.taskClient.RequestFromServer(context.Background())
+	// Create metadata and context
+	md := metadata.Pairs("worker_id", c.workerId)
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	// Make RPC using the context with the metadata
+	stream, err := c.taskClient.RequestFromServer(ctx)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}

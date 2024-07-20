@@ -11,7 +11,7 @@ client-run:
 	$(GORUN) runner/client/main.go
 
 worker-run:
-	$(GORUN) runner/worker/main.go
+	$(GORUN) runner/worker/main.go $(ARGS)
 
 test:
 	$(GOCMD) clean -testcache

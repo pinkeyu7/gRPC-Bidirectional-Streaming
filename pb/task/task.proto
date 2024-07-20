@@ -5,8 +5,17 @@ option go_package = "/task";
 package task;
 
 service Task {
+  rpc RegisterFromWorker (RegisterFromWorkerRequest) returns (RegisterFromWorkerResponse) {}
   rpc RequestFromClient (RequestFromClientRequest) returns (RequestFromClientResponse) {}
   rpc RequestFromServer (stream RequestFromServerResponse) returns (stream RequestFromServerRequest) {}
+}
+
+message RegisterFromWorkerRequest {
+  string workerId = 1;
+  repeated string TaskIds = 2;
+}
+
+message RegisterFromWorkerResponse {
 }
 
 message RequestFromClientRequest {

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/runner/client/internal/task"
 	"log"
+	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -34,7 +36,8 @@ func main() {
 			wg.Add(1)
 
 			go func() {
-				err := taskClient.GetInfo("test_task_id")
+				taskId := fmt.Sprintf("task_%s_%04d", "www", rand.IntN(config.GetTaskPerWorker())+1)
+				err := taskClient.GetInfo(taskId)
 				if err != nil {
 					log.Printf("error: %v", err)
 				}

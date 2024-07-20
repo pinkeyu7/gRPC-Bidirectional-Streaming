@@ -12,9 +12,19 @@ import (
 )
 
 func (s *Server) RequestFromClient(context context.Context, req *taskProto.RequestFromClientRequest) (*taskProto.RequestFromClientResponse, error) {
+	// Check task exist
+	workerIdObj, ok := s.taskIdWorkerMap.Load(req.GetTaskId())
+	if !ok {
+		return nil, status.Error(codes.NotFound, "task not found")
+	}
+	workerId, ok := workerIdObj.(string)
+	if !ok {
+		return nil, status.Error(codes.NotFound, "task not found")
+	}
+
 	// Arrange
 	requestId := helper.RandString(10)
-	log.Printf("Received: request id: %s, task id: %s", requestId, req.GetTaskId())
+	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, workerId, req.GetTaskId())
 
 	outputChan := make(chan *taskProto.RequestFromServerResponse)
 	s.outputChanMap.Store(requestId, &outputChan)
@@ -28,13 +38,15 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	}()
 
 	// Send to input channel
-	inputChanObj, ok := s.inputChanMap.Load("worker")
+	inputChanObj, ok := s.inputChanMap.Load(workerId)
 	if !ok {
-		log.Printf("failed to find input channel: worker: %v", "worker")
+		close(outputChan)
+		return nil, status.Error(codes.NotFound, "worker channel not found")
 	} else {
 		inputChan, ok := inputChanObj.(*chan *taskProto.RequestFromServerRequest)
 		if !ok {
-			log.Printf("failed to find input channel: worker: %v", "worker")
+			close(outputChan)
+			return nil, status.Error(codes.NotFound, "worker channel not found")
 		} else {
 			reqFromWorker := &taskProto.RequestFromServerRequest{
 				RequestId: requestId,
@@ -55,6 +67,6 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 
 		return res, nil
 	case <-timeout:
-		return nil, status.Errorf(codes.Aborted, "timeout")
+		return nil, status.Errorf(codes.Aborted, "reach timeout")
 	}
 }

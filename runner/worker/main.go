@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/runner/worker/internal/task"
 	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
@@ -11,8 +13,13 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+var workerId string
+
 func main() {
-	log.SetPrefix("[Worker]")
+	flag.StringVar(&workerId, "workerId", "worker_default", "worker id")
+	flag.Parse()
+
+	log.SetPrefix(fmt.Sprintf("[Worker: %s]", workerId))
 
 	// Generate connection
 	conn, err := grpc.NewClient(config.GetListenAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -22,8 +29,14 @@ func main() {
 	defer conn.Close()
 
 	// Init task service
-	ts := taskService.NewService(config.GetTaskPerWorker())
-	taskClient := task.NewClient(conn, ts)
+	ts := taskService.NewService(workerId, config.GetTaskPerWorker())
+	taskClient := task.NewClient(workerId, conn, ts)
+
+	// Register workerId
+	err = taskClient.RegisterIds()
+	if err != nil {
+		log.Fatalf("could not register ids: %v", err)
+	}
 
 	// Act
 	taskClient.GetInfo()

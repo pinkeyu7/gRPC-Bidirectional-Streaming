@@ -7,8 +7,9 @@ import (
 
 type Server struct {
 	taskProto.UnimplementedTaskServer
-	inputChanMap  sync.Map
-	outputChanMap sync.Map
+	taskIdWorkerMap sync.Map
+	inputChanMap    sync.Map
+	outputChanMap   sync.Map
 }
 
 func NewServer() *Server {

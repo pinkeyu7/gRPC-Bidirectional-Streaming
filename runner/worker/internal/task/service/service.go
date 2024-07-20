@@ -11,12 +11,12 @@ type Service struct {
 	Tasks []model.Task
 }
 
-func NewService(taskNumber int) task.Service {
+func NewService(workerId string, taskNumber int) task.Service {
 	// Init tasks
 	tasks := make([]model.Task, taskNumber)
 
 	for i := 0; i < taskNumber; i++ {
-		taskId := fmt.Sprintf("task_%04d", i+1)
+		taskId := fmt.Sprintf("task_%s_%04d", workerId, i+1)
 		tasks[i] = model.Task{
 			Id:      taskId,
 			Message: helper.Sha1Str(taskId),
@@ -26,6 +26,15 @@ func NewService(taskNumber int) task.Service {
 	return &Service{
 		Tasks: tasks,
 	}
+}
+
+func (s *Service) GetIds() []string {
+	taskIds := make([]string, len(s.Tasks))
+	for i, t := range s.Tasks {
+		taskIds[i] = t.Id
+	}
+
+	return taskIds
 }
 
 func (s *Service) GetInfo(taskId string) (string, error) {
