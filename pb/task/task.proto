@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "/task";
+
+package task;
+
+service Task {
+  rpc RequestFromClient (RequestFromClientRequest) returns (RequestFromClientResponse) {}
+  rpc RequestFromServer (RequestFromServerResponse) returns (RequestFromServerRequest) {}
+}
+
+message RequestFromClientRequest {
+  string TaskId = 1;
+}
+
+message RequestFromClientResponse {
+  string TaskId = 1;
+  string TaskMessage = 3;
+}
+
+message RequestFromServerRequest {
+  string RequestId = 1;
+  string TaskId = 2;
+}
+
+message RequestFromServerResponse {
+  string RequestId = 1;
+  string TaskId = 2;
+  string TaskMessage = 3;
+}
