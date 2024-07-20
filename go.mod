@@ -4,6 +4,7 @@ go 1.22.1
 
 require (
 	github.com/joho/godotenv v1.5.1
+	golang.org/x/crypto v0.23.0
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 )

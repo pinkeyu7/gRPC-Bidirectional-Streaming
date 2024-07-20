@@ -41,6 +41,7 @@ func (c *Client) GetInfo() {
 		// Act
 		taskId := req.GetTaskId()
 		taskMessage, err := c.taskService.GetInfo(taskId)
+		log.Printf("reqeust id: %s, task id: %s, task message: %s", req.GetRequestId(), taskId, taskMessage)
 
 		// Return message
 		res := &taskProto.RequestFromServerResponse{
