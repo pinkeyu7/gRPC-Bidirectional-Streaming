@@ -6,7 +6,7 @@ package task;
 
 service Task {
   rpc RequestFromClient (RequestFromClientRequest) returns (RequestFromClientResponse) {}
-  rpc RequestFromServer (RequestFromServerResponse) returns (RequestFromServerRequest) {}
+  rpc RequestFromServer (stream RequestFromServerResponse) returns (stream RequestFromServerRequest) {}
 }
 
 message RequestFromClientRequest {
