@@ -24,10 +24,11 @@ func main() {
 	defer conn.Close()
 
 	// Init task service
-	wg := new(sync.WaitGroup)
 	taskClient := task.NewClient(conn)
 
 	// Act
+	wg := new(sync.WaitGroup)
+
 	for i := 0; i < config.GetRequestTimeDuration(); i++ {
 		for j := 0; j < config.GetRequestPerSecond(); j++ {
 			wg.Add(1)
