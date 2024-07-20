@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/worker/internal/task"
 	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
 	"log"
@@ -20,6 +21,10 @@ func main() {
 	flag.Parse()
 
 	log.SetPrefix(fmt.Sprintf("[Worker: %s]", workerId))
+
+	// Pusher
+	pusher := prometheus.NewPusher(fmt.Sprintf("worker_%s", workerId))
+	pusher.Start()
 
 	// Generate connection
 	conn, err := grpc.NewClient(config.GetListenAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))

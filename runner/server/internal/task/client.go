@@ -34,7 +34,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	// Setup timeout
 	timeout := make(chan bool, 1)
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(60 * time.Second)
 		timeout <- true
 		close(timeout)
 	}()

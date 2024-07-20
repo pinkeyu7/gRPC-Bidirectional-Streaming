@@ -5,6 +5,10 @@ import (
 	"strconv"
 )
 
+func GetPushGatewayUrl() string {
+	return os.Getenv("PUSH_GATEWAY_URL")
+}
+
 func GetListenNetwork() string {
 	return os.Getenv("LISTEN_NETWORK")
 }

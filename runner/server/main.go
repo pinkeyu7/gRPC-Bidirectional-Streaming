@@ -3,6 +3,7 @@ package main
 import (
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/server/internal/task"
 	"log"
 	"net"
@@ -15,6 +16,10 @@ import (
 
 func main() {
 	log.SetPrefix("[Server]")
+
+	// Pusher
+	pusher := prometheus.NewPusher("server")
+	pusher.Start()
 
 	// Init
 	ts := task.NewServer()

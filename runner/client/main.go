@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"grpc-bidirectional-streaming/config"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/client/internal/task"
 	"log"
 	"math/rand/v2"
@@ -17,6 +18,10 @@ import (
 
 func main() {
 	log.SetPrefix("[Client]")
+
+	// Pusher
+	pusher := prometheus.NewPusher("client")
+	stopChan := pusher.Start()
 
 	// Generate connection
 	conn, err := grpc.NewClient(config.GetListenAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -49,6 +54,9 @@ func main() {
 
 	// Wait for tasks
 	wg.Wait()
+
+	*stopChan <- true
+	close(*stopChan)
 
 	log.Println("done")
 }
