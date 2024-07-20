@@ -56,3 +56,13 @@ func GetWorkerCount() int {
 
 	return wc
 }
+
+func GetWorkerIdleTime() int {
+	witStr := os.Getenv("WORKER_IDLE_TIME")
+	wit, err := strconv.Atoi(witStr)
+	if err != nil {
+		return 0
+	}
+
+	return wit
+}

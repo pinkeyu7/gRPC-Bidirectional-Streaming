@@ -6,6 +6,7 @@ import (
 	"grpc-bidirectional-streaming/runner/server/internal/task"
 	"log"
 	"net"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -17,6 +18,13 @@ func main() {
 
 	// Init
 	ts := task.NewServer()
+
+	go func() {
+		for {
+			ts.Monitor()
+			time.Sleep(5 * time.Second)
+		}
+	}()
 
 	// Listen
 	lis, err := net.Listen(config.GetListenNetwork(), config.GetListenAddress())

@@ -2,9 +2,12 @@ package service
 
 import (
 	"fmt"
+	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/dto/model"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/runner/worker/internal/task"
+	"math/rand/v2"
+	"time"
 )
 
 type Service struct {
@@ -38,6 +41,10 @@ func (s *Service) GetIds() []string {
 }
 
 func (s *Service) GetInfo(taskId string) (string, error) {
+	// Make worker idle
+	time.Sleep(time.Duration(rand.IntN(config.GetWorkerIdleTime())) * time.Second)
+
+	// Find task
 	for _, t := range s.Tasks {
 		if t.Id == taskId {
 			return t.Message, nil
