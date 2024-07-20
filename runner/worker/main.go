@@ -22,7 +22,7 @@ func main() {
 	defer conn.Close()
 
 	// Init task service
-	ts := taskService.NewService()
+	ts := taskService.NewService(config.GetTaskPerWorker())
 	taskClient := task.NewClient(conn, ts)
 
 	// Act

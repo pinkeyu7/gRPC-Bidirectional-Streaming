@@ -38,19 +38,20 @@ func (c *Client) GetInfo() {
 			log.Fatalf("failed to receive request: %v", err)
 		}
 
-		// Act
-		taskId := req.GetTaskId()
-		taskMessage, err := c.taskService.GetInfo(taskId)
-		log.Printf("reqeust id: %s, task id: %s, task message: %s", req.GetRequestId(), taskId, taskMessage)
+		go func(req *taskProto.RequestFromServerRequest) {
+			// Act
+			taskMessage, _ := c.taskService.GetInfo(req.GetTaskId())
+			log.Printf("reqeust id: %s, task id: %s, task message: %s", req.GetRequestId(), req.GetTaskId(), taskMessage)
 
-		// Return message
-		res := &taskProto.RequestFromServerResponse{
-			RequestId:   req.GetRequestId(),
-			TaskId:      taskId,
-			TaskMessage: taskMessage,
-		}
-		if err := stream.Send(res); err != nil {
-			log.Printf("failed to return: %v", err)
-		}
+			// Return message
+			res := &taskProto.RequestFromServerResponse{
+				RequestId:   req.GetRequestId(),
+				TaskId:      req.GetTaskId(),
+				TaskMessage: taskMessage,
+			}
+			if err := stream.Send(res); err != nil {
+				log.Printf("failed to return: %v", err)
+			}
+		}(req)
 	}
 }

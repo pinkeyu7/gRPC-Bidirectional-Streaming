@@ -34,3 +34,14 @@ func GetRequestTimeDuration() int {
 
 	return rtd
 }
+
+func GetTaskPerWorker() int {
+	tpwStr := os.Getenv("TASK_PER_WORKER")
+
+	tpw, err := strconv.Atoi(tpwStr)
+	if err != nil {
+		return 1
+	}
+
+	return tpw
+}

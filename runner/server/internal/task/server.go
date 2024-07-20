@@ -2,17 +2,15 @@ package task
 
 import (
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"sync"
 )
 
 type Server struct {
 	taskProto.UnimplementedTaskServer
-	inputChan  chan *taskProto.RequestFromServerRequest
-	outputChan chan *taskProto.RequestFromServerResponse
+	inputChanMap  sync.Map
+	outputChanMap sync.Map
 }
 
 func NewServer() *Server {
-	return &Server{
-		inputChan:  make(chan *taskProto.RequestFromServerRequest),
-		outputChan: make(chan *taskProto.RequestFromServerResponse),
-	}
+	return &Server{}
 }
