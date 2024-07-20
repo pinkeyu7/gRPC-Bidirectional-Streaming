@@ -4,6 +4,7 @@ import (
 	"context"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"log"
 	"time"
 
@@ -21,6 +22,8 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	if !ok {
 		return nil, status.Error(codes.NotFound, "task not found")
 	}
+
+	prometheus.RequestNum.Add(float64(1))
 
 	// Arrange
 	requestId := helper.RandString(10)

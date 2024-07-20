@@ -4,6 +4,7 @@ import (
 	"context"
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
 	"math/rand/v2"
@@ -69,6 +70,8 @@ func (c *Client) GetInfo() {
 			log.Fatalf("failed to receive request: %v", err)
 		}
 
+		prometheus.RequestNum.Add(float64(1))
+
 		go func(req *taskProto.RequestFromServerRequest) {
 			// Act
 			taskMessage, _ := c.taskService.GetInfo(req.GetTaskId())
@@ -86,6 +89,8 @@ func (c *Client) GetInfo() {
 			if err := stream.Send(res); err != nil {
 				log.Printf("failed to return: %v", err)
 			}
+
+			prometheus.RequestNum.Add(float64(-1))
 		}(req)
 	}
 }

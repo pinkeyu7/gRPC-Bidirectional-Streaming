@@ -60,6 +60,10 @@ func (p *Pusher) Push() {
 		Collector(memoryHeapAlloc).
 		Collector(memorySys).
 		Collector(goroutineNum).
+		Collector(RequestNum).
+		Collector(TaskIdWorkerNum).
+		Collector(InputChanNum).
+		Collector(OutputChanNum).
 		Add()
 
 	if err != nil {

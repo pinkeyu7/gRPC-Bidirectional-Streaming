@@ -3,7 +3,7 @@ package task
 import (
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
-	"log"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"sync"
 )
 
@@ -19,9 +19,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) Monitor() {
-	taskIdWorkerCount := helper.SyncMapLength(&s.taskIdWorkerMap)
-	inputChanCount := helper.SyncMapLength(&s.inputChanMap)
-	outputChanCount := helper.SyncMapLength(&s.outputChanMap)
-
-	log.Printf("Monitor taskIdWorkerCount: %d, inputChanCount: %d, outputChanCount: %d", taskIdWorkerCount, inputChanCount, outputChanCount)
+	prometheus.TaskIdWorkerNum.Set(float64(helper.SyncMapLength(&s.taskIdWorkerMap)))
+	prometheus.InputChanNum.Set(float64(helper.SyncMapLength(&s.inputChanMap)))
+	prometheus.OutputChanNum.Set(float64(helper.SyncMapLength(&s.outputChanMap)))
 }

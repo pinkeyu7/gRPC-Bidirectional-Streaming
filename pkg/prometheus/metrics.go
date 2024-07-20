@@ -30,4 +30,24 @@ var (
 		Name: "goroutine_num",
 		Help: "goroutine_num",
 	})
+
+	RequestNum = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "request_num",
+		Help: "request_num",
+	})
+
+	TaskIdWorkerNum = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "task_id_worker_num",
+		Help: "task_id_worker_num",
+	})
+
+	InputChanNum = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "input_chan_num",
+		Help: "input_chan_num",
+	})
+
+	OutputChanNum = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "output_chan_num",
+		Help: "output_chan_num",
+	})
 )

@@ -2,6 +2,7 @@ package task
 
 import (
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
 
@@ -92,5 +93,6 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 		*outputChan <- res
 		s.outputChanMap.Delete(res.GetRequestId())
 
+		prometheus.RequestNum.Add(float64(-1))
 	}
 }

@@ -40,12 +40,15 @@ func main() {
 		for j := 0; j < config.GetRequestPerSecond(); j++ {
 			wg.Add(1)
 
+			prometheus.RequestNum.Add(float64(1))
+
 			go func() {
 				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1), rand.IntN(config.GetTaskPerWorker())+1)
 				err := taskClient.GetInfo(taskId)
 				if err != nil {
 					log.Printf("error: %v", err)
 				}
+				prometheus.RequestNum.Add(float64(-1))
 				defer wg.Done()
 			}()
 		}
