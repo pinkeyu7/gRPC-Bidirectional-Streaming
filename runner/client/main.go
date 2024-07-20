@@ -1,10 +1,11 @@
 package main
 
 import (
-	"context"
 	"grpc-bidirectional-streaming/config"
-	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/runner/client/internal/task"
 	"log"
+	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,20 +16,35 @@ import (
 func main() {
 	log.SetPrefix("[Client]")
 
+	// Generate connection
 	conn, err := grpc.NewClient(config.GetListenAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := taskProto.NewTaskClient(conn)
 
-	// Send request
-	req := &taskProto.RequestFromClientRequest{
-		TaskId: "test_task_id",
+	// Init task service
+	wg := new(sync.WaitGroup)
+	taskClient := task.NewClient(conn)
+
+	// Act
+	for i := 0; i < config.GetRequestTimeDuration(); i++ {
+		for j := 0; j < config.GetRequestPerSecond(); j++ {
+			wg.Add(1)
+
+			go func() {
+				err := taskClient.GetInfo("test_task_id")
+				if err != nil {
+					log.Printf("error: %v", err)
+				}
+				defer wg.Done()
+			}()
+		}
+		time.Sleep(1 * time.Second)
 	}
-	res, err := client.RequestFromClient(context.Background(), req)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
-	log.Printf("task id: %s, task message: %s", res.GetTaskId(), res.GetTaskMessage())
+
+	// Wait for tasks
+	wg.Wait()
+
+	log.Println("done")
 }
