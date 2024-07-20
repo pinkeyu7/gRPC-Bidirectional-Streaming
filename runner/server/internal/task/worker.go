@@ -22,6 +22,17 @@ func (s *Server) RegisterFromWorker(context context.Context, req *taskProto.Regi
 	return &taskProto.RegisterFromWorkerResponse{}, nil
 }
 
+func (s *Server) UnregisterFromWorker(workerId string) {
+	s.taskIdWorkerMap.Range(func(key, workerIdObj interface{}) bool {
+		if workerIdObj.(string) == workerId {
+			s.taskIdWorkerMap.Delete(key)
+		}
+		return true
+	})
+
+	log.Printf("UnregisterFromWorker worker id: %v", workerId)
+}
+
 func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer) error {
 	// Read metadata from client
 	md, ok := metadata.FromIncomingContext(stream.Context())
@@ -52,11 +63,13 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 	for {
 		res, err := stream.Recv()
 		if err == io.EOF {
+			s.UnregisterFromWorker(workerId)
 			s.inputChanMap.Delete(workerId)
 			close(inputChan)
 			return nil
 		}
 		if err != nil {
+			s.UnregisterFromWorker(workerId)
 			s.inputChanMap.Delete(workerId)
 			close(inputChan)
 			return err
