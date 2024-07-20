@@ -17,6 +17,8 @@ func (s *Server) RegisterFromWorker(context context.Context, req *taskProto.Regi
 		s.taskIdWorkerMap.Store(taskId, req.GetWorkerId())
 	}
 
+	log.Printf("RegisterFromWorker worker id: %v", req.GetWorkerId())
+
 	return &taskProto.RegisterFromWorkerResponse{}, nil
 }
 

@@ -36,7 +36,7 @@ func main() {
 			wg.Add(1)
 
 			go func() {
-				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%03d", rand.IntN(1)+1), rand.IntN(config.GetTaskPerWorker())+1)
+				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1), rand.IntN(config.GetTaskPerWorker())+1)
 				err := taskClient.GetInfo(taskId)
 				if err != nil {
 					log.Printf("error: %v", err)

@@ -45,3 +45,14 @@ func GetTaskPerWorker() int {
 
 	return tpw
 }
+
+func GetWorkerCount() int {
+	wcStr := os.Getenv("WORKER_COUNT")
+
+	wc, err := strconv.Atoi(wcStr)
+	if err != nil {
+		return 1
+	}
+
+	return wc
+}
