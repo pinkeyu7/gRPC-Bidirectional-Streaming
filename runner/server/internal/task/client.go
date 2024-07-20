@@ -27,6 +27,8 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, workerId, req.GetTaskId())
 
 	outputChan := make(chan *taskProto.RequestFromServerResponse)
+	defer close(outputChan)
+
 	s.outputChanMap.Store(requestId, &outputChan)
 
 	// Setup timeout
@@ -40,22 +42,20 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	// Send to input channel
 	inputChanObj, ok := s.inputChanMap.Load(workerId)
 	if !ok {
-		close(outputChan)
+		s.outputChanMap.Delete(requestId)
 		return nil, status.Error(codes.NotFound, "worker channel not found")
-	} else {
-		inputChan, ok := inputChanObj.(*chan *taskProto.RequestFromServerRequest)
-		if !ok {
-			close(outputChan)
-			return nil, status.Error(codes.NotFound, "worker channel not found")
-		} else {
-			reqFromWorker := &taskProto.RequestFromServerRequest{
-				RequestId: requestId,
-				TaskId:    req.GetTaskId(),
-			}
-
-			*inputChan <- reqFromWorker
-		}
 	}
+	inputChan, ok := inputChanObj.(*chan *taskProto.RequestFromServerRequest)
+	if !ok {
+		s.outputChanMap.Delete(requestId)
+		return nil, status.Error(codes.NotFound, "worker channel not found")
+	}
+
+	reqFromWorker := &taskProto.RequestFromServerRequest{
+		RequestId: requestId,
+		TaskId:    req.GetTaskId(),
+	}
+	*inputChan <- reqFromWorker
 
 	// Return
 	select {
@@ -67,6 +67,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 
 		return res, nil
 	case <-timeout:
+		s.outputChanMap.Delete(requestId)
 		return nil, status.Errorf(codes.Aborted, "reach timeout")
 	}
 }

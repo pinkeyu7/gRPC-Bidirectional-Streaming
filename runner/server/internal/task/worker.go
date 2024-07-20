@@ -48,6 +48,7 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 
 	// Arrange
 	inputChan := make(chan *taskProto.RequestFromServerRequest)
+	defer close(inputChan)
 	s.inputChanMap.Store(workerId, &inputChan)
 
 	// Request from client, send to worker
@@ -65,29 +66,31 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 		if err == io.EOF {
 			s.UnregisterFromWorker(workerId)
 			s.inputChanMap.Delete(workerId)
-			close(inputChan)
 			return nil
 		}
 		if err != nil {
 			s.UnregisterFromWorker(workerId)
 			s.inputChanMap.Delete(workerId)
-			close(inputChan)
 			return err
 		}
 
 		// Send to output channel
-		outputChanObj, ok := s.outputChanMap.Load(res.RequestId)
+		outputChanObj, ok := s.outputChanMap.Load(res.GetRequestId())
 		if !ok {
 			log.Printf("failed to find output channel: request id: %v", res.GetRequestId())
-		} else {
-			outputChan, ok := outputChanObj.(*chan *taskProto.RequestFromServerResponse)
-			if !ok {
-				log.Printf("failed to find output channel: request id: %v", res.GetRequestId())
-			} else {
-				*outputChan <- res
-				s.outputChanMap.Delete(res.GetRequestId())
-				close(*outputChan)
-			}
+			continue
 		}
+		outputChan, ok := outputChanObj.(*chan *taskProto.RequestFromServerResponse)
+		if !ok {
+			log.Printf("failed to find output channel: request id: %v", res.GetRequestId())
+			s.outputChanMap.Delete(res.GetRequestId())
+			continue
+		}
+
+		// Send to output channel
+		log.Printf("Response: request id: %s, worker id: %s, task id: %s", res.GetRequestId(), workerId, res.GetTaskId())
+		*outputChan <- res
+		s.outputChanMap.Delete(res.GetRequestId())
+
 	}
 }
