@@ -36,14 +36,6 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 
 	s.outputChanMap.Store(requestId, &outputChan)
 
-	// Setup timeout
-	timeout := make(chan bool, 1)
-	go func() {
-		time.Sleep(60 * time.Second)
-		timeout <- true
-		close(timeout)
-	}()
-
 	// Send to input channel
 	inputChanObj, ok := s.inputChanMap.Load(workerId)
 	if !ok {
@@ -74,7 +66,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 		prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
 
 		return res, nil
-	case <-timeout:
+	case <-time.After(60 * time.Second):
 		duration := time.Since(start)
 		prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 
