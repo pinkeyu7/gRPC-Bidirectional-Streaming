@@ -55,7 +55,8 @@ func (p *Pusher) Push() {
 	goroutineNum.Set(float64(runtime.NumGoroutine()))
 
 	// Push
-	err := push.New(config.GetPushGatewayUrl(), p.jobName).Collector(memoryAlloc).
+	err := push.New(config.GetPushGatewayUrl(), p.jobName).
+		Collector(memoryAlloc).
 		Collector(memoryTotalAlloc).
 		Collector(memoryHeapAlloc).
 		Collector(memorySys).

@@ -75,6 +75,8 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 			return err
 		}
 
+		prometheus.RequestNum.Add(float64(-1))
+
 		// Send to output channel
 		outputChanObj, ok := s.outputChanMap.Load(res.GetRequestId())
 		if !ok {
@@ -92,7 +94,5 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 		log.Printf("Response: request id: %s, worker id: %s, task id: %s", res.GetRequestId(), workerId, res.GetTaskId())
 		*outputChan <- res
 		s.outputChanMap.Delete(res.GetRequestId())
-
-		prometheus.RequestNum.Add(float64(-1))
 	}
 }

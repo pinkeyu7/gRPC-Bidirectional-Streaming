@@ -1,22 +1,15 @@
 package helper
 
 import (
-	"math/rand"
-	"time"
+	"math/rand/v2"
 )
 
-const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-
-func StringWithCharset(length int, charset string) string {
-	b := make([]byte, length)
+func RandString(n int) string {
+	b := make([]byte, n)
 	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
+		b[i] = letterBytes[rand.IntN(len(letterBytes))]
 	}
 	return string(b)
-}
-
-func RandString(length int) string {
-	return StringWithCharset(length, charset)
 }
