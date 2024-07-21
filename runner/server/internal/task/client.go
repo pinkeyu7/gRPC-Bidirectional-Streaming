@@ -23,6 +23,8 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 		return nil, status.Error(codes.NotFound, "task not found")
 	}
 
+	// Monitoring
+	start := time.Now()
 	prometheus.RequestNum.Add(float64(1))
 
 	// Arrange
@@ -68,8 +70,14 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 			TaskMessage: resFromWorker.GetTaskMessage(),
 		}
 
+		duration := time.Since(start)
+		prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
+
 		return res, nil
 	case <-timeout:
+		duration := time.Since(start)
+		prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
+
 		s.outputChanMap.Delete(requestId)
 		return nil, status.Errorf(codes.Aborted, "reach timeout")
 	}

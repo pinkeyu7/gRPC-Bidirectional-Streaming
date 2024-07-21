@@ -43,12 +43,19 @@ func main() {
 			prometheus.RequestNum.Add(float64(1))
 
 			go func() {
+				start := time.Now()
 				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1), rand.IntN(config.GetTaskPerWorker())+1)
+
 				err := taskClient.GetInfo(taskId)
+				duration := time.Since(start)
 				if err != nil {
 					log.Printf("error: %v", err)
+					prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
+				} else {
+					prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
 				}
 				prometheus.RequestNum.Add(float64(-1))
+
 				defer wg.Done()
 			}()
 		}

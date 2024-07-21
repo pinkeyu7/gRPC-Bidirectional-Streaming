@@ -2,13 +2,10 @@ package task
 
 import (
 	"context"
-	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
-	"math/rand/v2"
-	"time"
 
 	"google.golang.org/grpc/metadata"
 
@@ -78,7 +75,7 @@ func (c *Client) GetInfo() {
 			log.Printf("reqeust id: %s, task id: %s, task message: %s", req.GetRequestId(), req.GetTaskId(), taskMessage)
 
 			// Make worker idle
-			time.Sleep(time.Duration(rand.IntN(config.GetWorkerIdleTime())) * time.Second)
+			//time.Sleep(time.Duration(rand.IntN(config.GetWorkerIdleTime())) * time.Second)
 
 			// Return message
 			res := &taskProto.RequestFromServerResponse{

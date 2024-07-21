@@ -65,6 +65,7 @@ func (p *Pusher) Push() {
 		Collector(TaskIdWorkerNum).
 		Collector(InputChanNum).
 		Collector(OutputChanNum).
+		Collector(ResponseTime).
 		Add()
 
 	if err != nil {

@@ -50,4 +50,10 @@ var (
 		Name: "output_chan_num",
 		Help: "output_chan_num",
 	})
+
+	ResponseTime = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "response_time",
+		Help:    "Histogram of response time for handler in seconds",
+		Buckets: []float64{.01, .025, .05, .1, .25, .5, 1, 2.5, 5},
+	}, []string{"status"})
 )
