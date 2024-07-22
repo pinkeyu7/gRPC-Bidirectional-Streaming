@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/client/internal/task"
 	"log"
 	"math/rand/v2"
+	"net"
 	"sync"
 	"time"
 
@@ -24,7 +26,13 @@ func main() {
 	stopChan := pusher.Start()
 
 	// Generate connection
-	conn, err := grpc.NewClient(config.GetListenAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("passthrough:%s", config.GetListenAddress()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(
+			ctx context.Context, s string,
+		) (net.Conn, error) {
+			log.Printf("Dialing %s\n", config.GetListenAddress())
+			return net.Dial(config.GetListenNetwork(), config.GetListenAddress())
+		}))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -39,8 +47,7 @@ func main() {
 	for i := 0; i < config.GetRequestTimeDuration(); i++ {
 		for j := 0; j < config.GetRequestPerSecond(); j++ {
 			wg.Add(1)
-
-			prometheus.RequestNum.Add(float64(1))
+			prometheus.RequestNum.Inc()
 
 			go func() {
 				start := time.Now()
@@ -54,7 +61,7 @@ func main() {
 				} else {
 					prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
 				}
-				prometheus.RequestNum.Add(float64(-1))
+				prometheus.ResponseNum.Inc()
 
 				defer wg.Done()
 			}()

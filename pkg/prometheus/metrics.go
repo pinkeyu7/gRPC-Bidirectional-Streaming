@@ -31,9 +31,14 @@ var (
 		Help: "goroutine_num",
 	})
 
-	RequestNum = promauto.NewGauge(prometheus.GaugeOpts{
+	RequestNum = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "request_num",
 		Help: "request_num",
+	})
+
+	ResponseNum = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "response_num",
+		Help: "response_num",
 	})
 
 	TaskIdWorkerNum = promauto.NewGauge(prometheus.GaugeOpts{

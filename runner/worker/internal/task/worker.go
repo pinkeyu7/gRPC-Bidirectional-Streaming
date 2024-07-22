@@ -67,7 +67,7 @@ func (c *Client) GetInfo() {
 			log.Fatalf("failed to receive request: %v", err)
 		}
 
-		prometheus.RequestNum.Add(float64(1))
+		prometheus.RequestNum.Inc()
 
 		go func(req *taskProto.RequestFromServerRequest) {
 			// Act
@@ -87,7 +87,7 @@ func (c *Client) GetInfo() {
 				log.Printf("failed to return: %v", err)
 			}
 
-			prometheus.RequestNum.Add(float64(-1))
+			prometheus.ResponseNum.Inc()
 		}(req)
 	}
 }

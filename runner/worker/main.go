@@ -8,10 +8,13 @@ import (
 	"grpc-bidirectional-streaming/runner/worker/internal/task"
 	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
 	"log"
+	"net"
 
 	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"context"
 )
 
 var workerId string
@@ -27,7 +30,13 @@ func main() {
 	pusher.Start()
 
 	// Generate connection
-	conn, err := grpc.NewClient(config.GetListenAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("passthrough:%s", config.GetListenAddress()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(
+			ctx context.Context, s string,
+		) (net.Conn, error) {
+			log.Printf("Dialing %s\n", config.GetListenAddress())
+			return net.Dial(config.GetListenNetwork(), config.GetListenAddress())
+		}))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

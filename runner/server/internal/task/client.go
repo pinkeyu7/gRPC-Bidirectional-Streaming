@@ -25,7 +25,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 
 	// Monitoring
 	start := time.Now()
-	prometheus.RequestNum.Add(float64(1))
+	prometheus.RequestNum.Inc()
 
 	// Arrange
 	requestId := helper.RandString(10)

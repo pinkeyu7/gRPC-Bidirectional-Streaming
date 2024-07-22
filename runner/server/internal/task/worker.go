@@ -75,7 +75,7 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 			return err
 		}
 
-		prometheus.RequestNum.Add(float64(-1))
+		prometheus.ResponseNum.Inc()
 
 		// Send to output channel
 		outputChanObj, ok := s.outputChanMap.Load(res.GetRequestId())
