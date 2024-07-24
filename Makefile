@@ -13,6 +13,15 @@ client-run:
 worker-run:
 	$(GORUN) runner/worker/main.go $(ARGS)
 
+server-build:
+	docker build . -f deploy/server.Dockerfile -t go-streaming-server
+
+client-build:
+	docker build . -f deploy/client.Dockerfile -t go-streaming-client
+
+worker-build:
+	docker build . -f deploy/worker.Dockerfile -t go-streaming-worker
+
 test:
 	$(GOCMD) clean -testcache
 	$(GOTEST) ./...
