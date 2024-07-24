@@ -1,0 +1,59 @@
+version: "3"
+
+x-common-variables: &common-variables
+  PUSH_GATEWAY_URL: http://pushgateway.prometheus.orb.local:9091
+  REQUEST_PER_SECOND: 2000
+  REQUEST_TIME_DURATION: 1800
+  TASK_PER_WORKER: 100
+  WORKER_COUNT: 1
+  WORKER_IDLE_TIME: 5
+  LISTEN_NETWORK: tcp
+  LISTEN_ADDRESS: server:50015
+
+services:
+  worker:
+    container_name: worker
+    build:
+      dockerfile: deploy/worker.Dockerfile
+    networks:
+      - general
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 500M
+    environment:
+      <<: *common-variables
+
+  server:
+    container_name: server
+    build:
+      dockerfile: deploy/server.Dockerfile
+    networks:
+      - general
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 500M
+    ports:
+      - 50015:50015
+    environment:
+      <<: *common-variables
+
+  client:
+    container_name: client
+    build:
+      dockerfile: deploy/client.Dockerfile
+    networks:
+      - general
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 500M
+    environment:
+      <<: *common-variables
+
+networks:
+  general:
