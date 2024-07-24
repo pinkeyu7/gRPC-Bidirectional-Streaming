@@ -1,7 +1,7 @@
 version: "3"
 
 x-common-variables: &common-variables
-  PUSH_GATEWAY_URL: http://pushgateway.prometheus.orb.local:9091
+  PUSH_GATEWAY_URL: http://pushgateway.prometheus-docker.orb.local:9091
   REQUEST_PER_SECOND: 2000
   REQUEST_TIME_DURATION: 1800
   TASK_PER_WORKER: 100
