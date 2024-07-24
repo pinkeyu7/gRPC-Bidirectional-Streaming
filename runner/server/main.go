@@ -7,6 +7,9 @@ import (
 	"grpc-bidirectional-streaming/runner/server/internal/task"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
@@ -15,6 +18,21 @@ import (
 )
 
 func main() {
+	if config.GetListenNetwork() == "unix" {
+		_ = os.Remove(config.GetListenAddress())
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		if config.GetListenNetwork() == "unix" {
+			_ = os.Remove(config.GetListenAddress())
+		}
+
+		os.Exit(0)
+	}()
+
 	log.SetPrefix("[Server]")
 
 	// Pusher
