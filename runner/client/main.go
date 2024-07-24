@@ -40,6 +40,8 @@ func main() {
 
 	// Init task service
 	taskClient := task.NewClient(conn)
+	successNum := 0
+	failNum := 0
 
 	// Act
 	wg := new(sync.WaitGroup)
@@ -57,8 +59,10 @@ func main() {
 				duration := time.Since(start)
 				if err != nil {
 					log.Printf("error: %v", err)
+					failNum++
 					prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 				} else {
+					successNum++
 					prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
 				}
 				prometheus.ResponseNum.Inc()
@@ -75,5 +79,5 @@ func main() {
 	*stopChan <- true
 	close(*stopChan)
 
-	log.Println("done")
+	log.Printf("done: success: %d, fail: %d", successNum, failNum)
 }
