@@ -46,6 +46,10 @@ func (c *Client) RegisterIds() error {
 }
 
 func (c *Client) GetInfo() {
+	// Arrange
+	outputChan := make(chan *taskProto.RequestFromServerResponse)
+	defer close(outputChan)
+
 	// Create metadata and context
 	md := metadata.Pairs("worker_id", c.workerId)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
@@ -55,6 +59,16 @@ func (c *Client) GetInfo() {
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
+
+	// Send to server
+	go func() {
+		for req := range outputChan {
+			if err := stream.Send(req); err != nil {
+				log.Printf("failed to send request: %v", err)
+			}
+			prometheus.ResponseNum.Inc()
+		}
+	}()
 
 	// Handle message
 	for {
@@ -70,9 +84,11 @@ func (c *Client) GetInfo() {
 		prometheus.RequestNum.Inc()
 
 		go func(req *taskProto.RequestFromServerRequest) {
+			prometheus.WorkerRequestNum.Inc()
+
 			// Act
 			taskMessage, _ := c.taskService.GetInfo(req.GetTaskId())
-			log.Printf("reqeust id: %s, task id: %s, task message: %s", req.GetRequestId(), req.GetTaskId(), taskMessage)
+			log.Printf("request id: %s, task id: %s, task message: %s", req.GetRequestId(), req.GetTaskId(), taskMessage)
 
 			// Make worker idle
 			//time.Sleep(time.Duration(rand.IntN(config.GetWorkerIdleTime())) * time.Second)
@@ -83,11 +99,7 @@ func (c *Client) GetInfo() {
 				TaskId:      req.GetTaskId(),
 				TaskMessage: taskMessage,
 			}
-			if err := stream.Send(res); err != nil {
-				log.Printf("failed to return: %v", err)
-			}
-
-			prometheus.ResponseNum.Inc()
+			outputChan <- res
 		}(req)
 	}
 }

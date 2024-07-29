@@ -20,7 +20,7 @@ import (
 var workerId string
 
 func main() {
-	flag.StringVar(&workerId, "workerId", "worker_001", "worker id")
+	flag.StringVar(&workerId, "workerId", config.GetWorkerId(), "worker id")
 	flag.Parse()
 
 	log.SetPrefix(fmt.Sprintf("[Worker: %s]", workerId))

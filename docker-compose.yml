@@ -9,6 +9,7 @@ x-common-variables: &common-variables
   WORKER_IDLE_TIME: 5
   LISTEN_NETWORK: tcp
   LISTEN_ADDRESS: server:50015
+  SERVER_TIMEOUT: 10
 
 services:
   worker:
@@ -24,6 +25,7 @@ services:
           memory: 500M
     environment:
       <<: *common-variables
+      WORKER_ID: worker_001
 
   server:
     container_name: server

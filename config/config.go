@@ -61,6 +61,10 @@ func GetWorkerCount() int {
 	return wc
 }
 
+func GetWorkerId() string {
+	return os.Getenv("WORKER_ID")
+}
+
 func GetWorkerIdleTime() int {
 	witStr := os.Getenv("WORKER_IDLE_TIME")
 	wit, err := strconv.Atoi(witStr)
@@ -69,4 +73,14 @@ func GetWorkerIdleTime() int {
 	}
 
 	return wit
+}
+
+func GetServerTimeout() int {
+	stStr := os.Getenv("SERVER_TIMEOUT")
+	st, err := strconv.Atoi(stStr)
+	if err != nil {
+		return 60
+	}
+
+	return st
 }

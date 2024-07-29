@@ -62,6 +62,7 @@ func (p *Pusher) Push() {
 		Collector(memorySys).
 		Collector(goroutineNum).
 		Collector(RequestNum).
+		Collector(WorkerRequestNum).
 		Collector(ResponseNum).
 		Collector(TaskIdWorkerNum).
 		Collector(InputChanNum).

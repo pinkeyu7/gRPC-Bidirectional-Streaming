@@ -58,7 +58,7 @@ func main() {
 				err := taskClient.GetInfo(taskId)
 				duration := time.Since(start)
 				if err != nil {
-					log.Printf("error: %v", err)
+					log.Printf("task id: %s, error: %v", taskId, err)
 					failNum++
 					prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 				} else {

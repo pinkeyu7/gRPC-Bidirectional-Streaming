@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/prometheus"
@@ -66,7 +67,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 		prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
 
 		return res, nil
-	case <-time.After(60 * time.Second):
+	case <-time.After(time.Duration(config.GetServerTimeout()) * time.Second):
 		duration := time.Since(start)
 		prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 
