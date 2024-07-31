@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/server/internal/task"
 	"log"
@@ -15,6 +17,8 @@ import (
 	"google.golang.org/grpc"
 
 	_ "github.com/joho/godotenv/autoload"
+
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
 func main() {
@@ -34,6 +38,17 @@ func main() {
 	}()
 
 	log.SetPrefix("[Server]")
+
+	// Jaeger
+	tp, err := jaeger.InitTracer(context.Background(), "server")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			log.Printf("Error shutting down tracer provider: %v", err)
+		}
+	}()
 
 	// Pusher
 	pusher := prometheus.NewPusher("server")
@@ -56,7 +71,7 @@ func main() {
 	}
 
 	// Start Server
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	taskProto.RegisterTaskServer(s, ts)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

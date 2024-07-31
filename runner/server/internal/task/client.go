@@ -5,10 +5,12 @@ import (
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
+	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"log"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -31,6 +33,14 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	// Arrange
 	requestId := helper.RandString(10)
 	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, workerId, req.GetTaskId())
+
+	// Jaeger
+	_, span := jaeger.Tracer().Start(context, "request_from_client")
+	span.SetAttributes(attribute.String("task_id", req.GetTaskId()))
+	span.SetAttributes(attribute.String("request_id", requestId))
+	span.SetAttributes(attribute.String("worker_id", workerId))
+	span.AddEvent("init")
+	defer span.End()
 
 	outputChan := make(chan *taskProto.RequestFromServerResponse)
 	defer close(outputChan)
@@ -55,6 +65,8 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	}
 	*inputChan <- reqFromWorker
 
+	span.AddEvent("send to inputChan")
+
 	// Return
 	select {
 	case resFromWorker := <-outputChan:
@@ -66,10 +78,14 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 		duration := time.Since(start)
 		prometheus.ResponseTime.WithLabelValues("success").Observe(duration.Seconds())
 
+		span.AddEvent("success")
+
 		return res, nil
 	case <-time.After(time.Duration(config.GetServerTimeout()) * time.Second):
 		duration := time.Since(start)
 		prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
+
+		span.AddEvent("timeout")
 
 		s.outputChanMap.Delete(requestId)
 		return nil, status.Errorf(codes.Aborted, "reach timeout")

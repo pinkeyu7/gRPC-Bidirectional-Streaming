@@ -84,3 +84,7 @@ func GetServerTimeout() int {
 
 	return st
 }
+
+func GetJaegerEndpoint() string {
+	return os.Getenv("JAEGER_ENDPOINT")
+}

@@ -10,6 +10,7 @@ x-common-variables: &common-variables
   LISTEN_NETWORK: tcp
   LISTEN_ADDRESS: server:50015
   SERVER_TIMEOUT: 10
+  JAEGER_ENDPOINT: jaeger.prometheus-docker.orb.local:4317
 
 services:
   worker:
