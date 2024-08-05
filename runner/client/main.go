@@ -69,7 +69,7 @@ func main() {
 
 			go func() {
 				start := time.Now()
-				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1), rand.IntN(config.GetTaskPerWorker())+1)
+				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%04d", rand.IntN(config.GetWorkerCount())+1), rand.IntN(config.GetTaskPerWorker())+1)
 
 				err := taskClient.GetInfo(context.Background(), taskId)
 				duration := time.Since(start)

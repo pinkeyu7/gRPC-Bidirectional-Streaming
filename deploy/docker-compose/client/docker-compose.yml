@@ -8,14 +8,14 @@ x-common-variables: &common-variables
   WORKER_COUNT: 100
   WORKER_IDLE_TIME: 5
   LISTEN_NETWORK: tcp
-  LISTEN_ADDRESS: server.worker.orb.local:50015
+  LISTEN_ADDRESS: server.server.orb.local:50015
   SERVER_TIMEOUT: 10
   JAEGER_ENDPOINT: jaeger.prometheus-docker.orb.local:4317
 
 x-client-template: &client-template
     image: grpc-bidirectional-streaming-client:latest
     networks:
-      - general
+      general:
     deploy:
       resources:
         limits:
@@ -32,3 +32,4 @@ services:
 
 networks:
   general:
+    external: true
