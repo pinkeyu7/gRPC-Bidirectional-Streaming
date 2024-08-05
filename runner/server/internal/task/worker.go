@@ -5,6 +5,9 @@ import (
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
+	"time"
+
+	cmap "github.com/orcaman/concurrent-map/v2"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -15,7 +18,7 @@ import (
 
 func (s *Server) RegisterFromWorker(context context.Context, req *taskProto.RegisterFromWorkerRequest) (*taskProto.RegisterFromWorkerResponse, error) {
 	for _, taskId := range req.GetTaskIds() {
-		s.taskIdWorkerMap.Store(taskId, req.GetWorkerId())
+		s.taskIdWorkerMap.Set(taskId, req.GetWorkerId())
 	}
 
 	log.Printf("RegisterFromWorker worker id: %v", req.GetWorkerId())
@@ -24,12 +27,11 @@ func (s *Server) RegisterFromWorker(context context.Context, req *taskProto.Regi
 }
 
 func (s *Server) UnregisterFromWorker(workerId string) {
-	s.taskIdWorkerMap.Range(func(key, workerIdObj interface{}) bool {
-		if workerIdObj.(string) == workerId {
-			s.taskIdWorkerMap.Delete(key)
+	for t := range s.taskIdWorkerMap.IterBuffered() {
+		if t.Val == workerId {
+			s.taskIdWorkerMap.Remove(t.Key)
 		}
-		return true
-	})
+	}
 
 	log.Printf("UnregisterFromWorker worker id: %v", workerId)
 }
@@ -50,7 +52,10 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 	// Arrange
 	inputChan := make(chan *taskProto.RequestFromServerRequest)
 	defer close(inputChan)
-	s.inputChanMap.Store(workerId, &inputChan)
+	s.inputChanMap.Set(workerId, &inputChan)
+
+	outputChanMap := cmap.New[*chan *taskProto.RequestFromServerResponse]()
+	s.outputChanMap.Set(workerId, &outputChanMap)
 
 	// Request from client, send to worker
 	go func() {
@@ -61,38 +66,44 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 		}
 	}()
 
+	go func() {
+		for {
+			count := outputChanMap.Count()
+			if count > 0 {
+				log.Printf("worker id: %v, outputChanMap: %d", workerId, count)
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
 	// Receive from worker, send to client
 	for {
 		res, err := stream.Recv()
 		if err == io.EOF {
 			s.UnregisterFromWorker(workerId)
-			s.inputChanMap.Delete(workerId)
+			s.inputChanMap.Remove(workerId)
 			return nil
 		}
 		if err != nil {
 			s.UnregisterFromWorker(workerId)
-			s.inputChanMap.Delete(workerId)
+			s.inputChanMap.Remove(workerId)
 			return err
 		}
 
-		prometheus.ResponseNum.Inc()
+		go func(outputChanMap *cmap.ConcurrentMap[string, *chan *taskProto.RequestFromServerResponse], res *taskProto.RequestFromServerResponse) {
+			prometheus.ResponseNum.Inc()
 
-		// Send to output channel
-		outputChanObj, ok := s.outputChanMap.Load(res.GetRequestId())
-		if !ok {
-			log.Printf("failed to find output channel: request id: %v", res.GetRequestId())
-			continue
-		}
-		outputChan, ok := outputChanObj.(*chan *taskProto.RequestFromServerResponse)
-		if !ok {
-			log.Printf("failed to find output channel: request id: %v", res.GetRequestId())
-			s.outputChanMap.Delete(res.GetRequestId())
-			continue
-		}
+			// Send to output channel
+			outputChan, ok := outputChanMap.Get(res.GetRequestId())
+			if !ok {
+				log.Printf("failed to find output channel: request id: %v", res.GetRequestId())
+				return
+			}
 
-		// Send to output channel
-		log.Printf("Response: request id: %s, worker id: %s, task id: %s", res.GetRequestId(), workerId, res.GetTaskId())
-		*outputChan <- res
-		s.outputChanMap.Delete(res.GetRequestId())
+			// Send to output channel
+			//log.Printf("Response: request id: %s, worker id: %s, task id: %s", res.GetRequestId(), workerId, res.GetTaskId())
+			*outputChan <- res
+			outputChanMap.Remove(res.GetRequestId())
+		}(&outputChanMap, res)
 	}
 }

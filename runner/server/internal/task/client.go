@@ -11,17 +11,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Server) RequestFromClient(context context.Context, req *taskProto.RequestFromClientRequest) (*taskProto.RequestFromClientResponse, error) {
 	// Check task exist
-	workerIdObj, ok := s.taskIdWorkerMap.Load(req.GetTaskId())
-	if !ok {
-		return nil, status.Error(codes.NotFound, "task not found")
-	}
-	workerId, ok := workerIdObj.(string)
+	workerId, ok := s.taskIdWorkerMap.Get(req.GetTaskId())
 	if !ok {
 		return nil, status.Error(codes.NotFound, "task not found")
 	}
@@ -42,22 +39,20 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	span.AddEvent("init")
 	defer span.End()
 
+	// Send to input channel
+	inputChan, ok := s.inputChanMap.Get(workerId)
+	if !ok {
+		return nil, status.Error(codes.NotFound, "worker channel not found")
+	}
+
 	outputChan := make(chan *taskProto.RequestFromServerResponse)
 	defer close(outputChan)
 
-	s.outputChanMap.Store(requestId, &outputChan)
-
-	// Send to input channel
-	inputChanObj, ok := s.inputChanMap.Load(workerId)
+	outputChanMap, ok := s.outputChanMap.Get(workerId)
 	if !ok {
-		s.outputChanMap.Delete(requestId)
 		return nil, status.Error(codes.NotFound, "worker channel not found")
 	}
-	inputChan, ok := inputChanObj.(*chan *taskProto.RequestFromServerRequest)
-	if !ok {
-		s.outputChanMap.Delete(requestId)
-		return nil, status.Error(codes.NotFound, "worker channel not found")
-	}
+	outputChanMap.Set(requestId, &outputChan)
 
 	reqFromWorker := &taskProto.RequestFromServerRequest{
 		RequestId: requestId,
@@ -87,7 +82,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 
 		span.AddEvent("timeout")
 
-		s.outputChanMap.Delete(requestId)
+		outputChanMap.Remove(requestId)
 		return nil, status.Errorf(codes.Aborted, "reach timeout")
 	}
 }
