@@ -9,6 +9,7 @@ import (
 	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
 	"log"
 	"net"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/grpc"
@@ -20,6 +21,8 @@ import (
 var workerId string
 
 func main() {
+	time.Sleep(5 * time.Second)
+
 	flag.StringVar(&workerId, "workerId", config.GetWorkerId(), "worker id")
 	flag.Parse()
 

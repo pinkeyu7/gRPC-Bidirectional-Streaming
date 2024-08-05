@@ -1,0 +1,742 @@
+version: "3"
+
+x-common-variables: &common-variables
+  PUSH_GATEWAY_URL: http://pushgateway.prometheus-docker.orb.local:9091
+  REQUEST_PER_SECOND: 100
+  REQUEST_TIME_DURATION: 1800
+  TASK_PER_WORKER: 100
+  WORKER_COUNT: 100
+  WORKER_IDLE_TIME: 5
+  LISTEN_NETWORK: tcp
+  LISTEN_ADDRESS: server:50015
+  SERVER_TIMEOUT: 10
+  JAEGER_ENDPOINT: jaeger.prometheus-docker.orb.local:4317
+
+x-worker-template: &worker-template
+  image: grpc-bidirectional-streaming-worker:latest
+  networks:
+    - general
+  deploy:
+    resources:
+      limits:
+        cpus: "1"
+        memory: 500M
+
+services:
+  server:
+    container_name: server
+    image: grpc-bidirectional-streaming-server:latest
+    networks:
+      - general
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 5000M
+    ports:
+      - 50015:50015
+    environment:
+      <<: *common-variables
+
+  worker_001:
+    <<: *worker-template
+    container_name: worker_001
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_001
+
+  worker_002:
+    <<: *worker-template
+    container_name: worker_002
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_002
+
+  worker_003:
+    <<: *worker-template
+    container_name: worker_003
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_003
+
+  worker_004:
+    <<: *worker-template
+    container_name: worker_004
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_004
+
+  worker_005:
+    <<: *worker-template
+    container_name: worker_005
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_005
+
+  worker_006:
+    <<: *worker-template
+    container_name: worker_006
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_006
+
+  worker_007:
+    <<: *worker-template
+    container_name: worker_007
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_007
+
+  worker_008:
+    <<: *worker-template
+    container_name: worker_008
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_008
+
+  worker_009:
+    <<: *worker-template
+    container_name: worker_009
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_009
+
+  worker_010:
+    <<: *worker-template
+    container_name: worker_010
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_010
+
+  worker_011:
+    <<: *worker-template
+    container_name: worker_011
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_011
+
+  worker_012:
+    <<: *worker-template
+    container_name: worker_012
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_012
+
+  worker_013:
+    <<: *worker-template
+    container_name: worker_013
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_013
+
+  worker_014:
+    <<: *worker-template
+    container_name: worker_014
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_014
+
+  worker_015:
+    <<: *worker-template
+    container_name: worker_015
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_015
+
+  worker_016:
+    <<: *worker-template
+    container_name: worker_016
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_016
+
+  worker_017:
+    <<: *worker-template
+    container_name: worker_017
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_017
+
+  worker_018:
+    <<: *worker-template
+    container_name: worker_018
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_018
+
+  worker_019:
+    <<: *worker-template
+    container_name: worker_019
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_019
+
+  worker_020:
+    <<: *worker-template
+    container_name: worker_020
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_020
+
+  worker_021:
+    <<: *worker-template
+    container_name: worker_021
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_021
+
+  worker_022:
+    <<: *worker-template
+    container_name: worker_022
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_022
+
+  worker_023:
+    <<: *worker-template
+    container_name: worker_023
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_023
+
+  worker_024:
+    <<: *worker-template
+    container_name: worker_024
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_024
+
+  worker_025:
+    <<: *worker-template
+    container_name: worker_025
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_025
+
+  worker_026:
+    <<: *worker-template
+    container_name: worker_026
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_026
+
+  worker_027:
+    <<: *worker-template
+    container_name: worker_027
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_027
+
+  worker_028:
+    <<: *worker-template
+    container_name: worker_028
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_028
+
+  worker_029:
+    <<: *worker-template
+    container_name: worker_029
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_029
+
+  worker_030:
+    <<: *worker-template
+    container_name: worker_030
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_030
+
+  worker_031:
+    <<: *worker-template
+    container_name: worker_031
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_031
+
+  worker_032:
+    <<: *worker-template
+    container_name: worker_032
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_032
+
+  worker_033:
+    <<: *worker-template
+    container_name: worker_033
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_033
+
+  worker_034:
+    <<: *worker-template
+    container_name: worker_034
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_034
+
+  worker_035:
+    <<: *worker-template
+    container_name: worker_035
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_035
+
+  worker_036:
+    <<: *worker-template
+    container_name: worker_036
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_036
+
+  worker_037:
+    <<: *worker-template
+    container_name: worker_037
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_037
+
+  worker_038:
+    <<: *worker-template
+    container_name: worker_038
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_038
+
+  worker_039:
+    <<: *worker-template
+    container_name: worker_039
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_039
+
+  worker_040:
+    <<: *worker-template
+    container_name: worker_040
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_040
+
+  worker_041:
+    <<: *worker-template
+    container_name: worker_041
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_041
+
+  worker_042:
+    <<: *worker-template
+    container_name: worker_042
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_042
+
+  worker_043:
+    <<: *worker-template
+    container_name: worker_043
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_043
+
+  worker_044:
+    <<: *worker-template
+    container_name: worker_044
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_044
+
+  worker_045:
+    <<: *worker-template
+    container_name: worker_045
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_045
+
+  worker_046:
+    <<: *worker-template
+    container_name: worker_046
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_046
+
+  worker_047:
+    <<: *worker-template
+    container_name: worker_047
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_047
+
+  worker_048:
+    <<: *worker-template
+    container_name: worker_048
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_048
+
+  worker_049:
+    <<: *worker-template
+    container_name: worker_049
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_049
+
+  worker_050:
+    <<: *worker-template
+    container_name: worker_050
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_050
+
+  worker_051:
+    <<: *worker-template
+    container_name: worker_051
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_051
+
+  worker_052:
+    <<: *worker-template
+    container_name: worker_052
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_052
+
+  worker_053:
+    <<: *worker-template
+    container_name: worker_053
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_053
+
+  worker_054:
+    <<: *worker-template
+    container_name: worker_054
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_054
+
+  worker_055:
+    <<: *worker-template
+    container_name: worker_055
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_055
+
+  worker_056:
+    <<: *worker-template
+    container_name: worker_056
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_056
+
+  worker_057:
+    <<: *worker-template
+    container_name: worker_057
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_057
+
+  worker_058:
+    <<: *worker-template
+    container_name: worker_058
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_058
+
+  worker_059:
+    <<: *worker-template
+    container_name: worker_059
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_059
+
+  worker_060:
+    <<: *worker-template
+    container_name: worker_060
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_060
+
+  worker_061:
+    <<: *worker-template
+    container_name: worker_061
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_061
+
+  worker_062:
+    <<: *worker-template
+    container_name: worker_062
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_062
+
+  worker_063:
+    <<: *worker-template
+    container_name: worker_063
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_063
+
+  worker_064:
+    <<: *worker-template
+    container_name: worker_064
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_064
+
+  worker_065:
+    <<: *worker-template
+    container_name: worker_065
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_065
+
+  worker_066:
+    <<: *worker-template
+    container_name: worker_066
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_066
+
+  worker_067:
+    <<: *worker-template
+    container_name: worker_067
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_067
+
+  worker_068:
+    <<: *worker-template
+    container_name: worker_068
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_068
+
+  worker_069:
+    <<: *worker-template
+    container_name: worker_069
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_069
+
+  worker_070:
+    <<: *worker-template
+    container_name: worker_070
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_070
+
+  worker_071:
+    <<: *worker-template
+    container_name: worker_071
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_071
+
+  worker_072:
+    <<: *worker-template
+    container_name: worker_072
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_072
+
+  worker_073:
+    <<: *worker-template
+    container_name: worker_073
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_073
+
+  worker_074:
+    <<: *worker-template
+    container_name: worker_074
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_074
+
+  worker_075:
+    <<: *worker-template
+    container_name: worker_075
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_075
+
+  worker_076:
+    <<: *worker-template
+    container_name: worker_076
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_076
+
+  worker_077:
+    <<: *worker-template
+    container_name: worker_077
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_077
+
+  worker_078:
+    <<: *worker-template
+    container_name: worker_078
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_078
+
+  worker_079:
+    <<: *worker-template
+    container_name: worker_079
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_079
+
+  worker_080:
+    <<: *worker-template
+    container_name: worker_080
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_080
+
+  worker_081:
+    <<: *worker-template
+    container_name: worker_081
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_081
+
+  worker_082:
+    <<: *worker-template
+    container_name: worker_082
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_082
+
+  worker_083:
+    <<: *worker-template
+    container_name: worker_083
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_083
+
+  worker_084:
+    <<: *worker-template
+    container_name: worker_084
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_084
+
+  worker_085:
+    <<: *worker-template
+    container_name: worker_085
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_085
+
+  worker_086:
+    <<: *worker-template
+    container_name: worker_086
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_086
+
+  worker_087:
+    <<: *worker-template
+    container_name: worker_087
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_087
+
+  worker_088:
+    <<: *worker-template
+    container_name: worker_088
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_088
+
+  worker_089:
+    <<: *worker-template
+    container_name: worker_089
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_089
+
+  worker_090:
+    <<: *worker-template
+    container_name: worker_090
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_090
+
+  worker_091:
+    <<: *worker-template
+    container_name: worker_091
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_091
+
+  worker_092:
+    <<: *worker-template
+    container_name: worker_092
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_092
+
+  worker_093:
+    <<: *worker-template
+    container_name: worker_093
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_093
+
+  worker_094:
+    <<: *worker-template
+    container_name: worker_094
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_094
+
+  worker_095:
+    <<: *worker-template
+    container_name: worker_095
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_095
+
+  worker_096:
+    <<: *worker-template
+    container_name: worker_096
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_096
+
+  worker_097:
+    <<: *worker-template
+    container_name: worker_097
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_097
+
+  worker_098:
+    <<: *worker-template
+    container_name: worker_098
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_098
+
+  worker_099:
+    <<: *worker-template
+    container_name: worker_099
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_099
+
+  worker_100:
+    <<: *worker-template
+    container_name: worker_100
+    environment:
+      <<: *common-variables
+      WORKER_ID: worker_100
+
+networks:
+  general:
