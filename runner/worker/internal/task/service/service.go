@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"grpc-bidirectional-streaming/dto/model"
+	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/runner/worker/internal/task"
 )
@@ -46,4 +47,20 @@ func (s *Service) GetInfo(taskId string) (string, error) {
 	}
 
 	return "", nil
+}
+
+func (s *Service) HandleRequest(req *taskProto.RequestFromServerRequest) (*taskProto.RequestFromServerResponse, error) {
+	taskMessage := ""
+	for _, t := range s.Tasks {
+		if t.Id == req.TaskId {
+			taskMessage = t.Message
+			break
+		}
+	}
+
+	return &taskProto.RequestFromServerResponse{
+		RequestId:   req.GetRequestId(),
+		TaskId:      req.GetTaskId(),
+		TaskMessage: taskMessage,
+	}, nil
 }

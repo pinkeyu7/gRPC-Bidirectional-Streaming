@@ -4,8 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
+	taskProto "grpc-bidirectional-streaming/pb/task"
+	grpc_streaming "grpc-bidirectional-streaming/pkg/grpc-streaming"
 	"grpc-bidirectional-streaming/pkg/prometheus"
-	"grpc-bidirectional-streaming/runner/worker/internal/task"
 	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
 	"log"
 	"net"
@@ -47,14 +48,19 @@ func main() {
 
 	// Init task service
 	ts := taskService.NewService(workerId, config.GetTaskPerWorker())
-	taskClient := task.NewClient(workerId, conn, ts)
+	tc := taskProto.NewTaskClient(conn)
 
 	// Register workerId
-	err = taskClient.RegisterIds()
+	_, err = tc.RegisterFromWorker(context.Background(), &taskProto.RegisterFromWorkerRequest{
+		WorkerId: workerId,
+		TaskIds:  ts.GetIds(),
+	})
 	if err != nil {
 		log.Fatalf("could not register ids: %v", err)
 	}
 
 	// Act
-	taskClient.GetInfo()
+	go grpc_streaming.WorkerHandleStream[taskProto.RequestFromServerRequest, taskProto.RequestFromServerResponse, taskProto.Task_RequestFromServerClient](workerId, tc.RequestFromServer, ts.HandleRequest)
+
+	select {}
 }

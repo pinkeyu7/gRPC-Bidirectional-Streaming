@@ -1,6 +1,8 @@
 package task
 
+import taskProto "grpc-bidirectional-streaming/pb/task"
+
 type Service interface {
 	GetIds() []string
-	GetInfo(taskId string) (string, error)
+	HandleRequest(req *taskProto.RequestFromServerRequest) (*taskProto.RequestFromServerResponse, error)
 }
