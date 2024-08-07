@@ -50,15 +50,6 @@ func main() {
 	ts := taskService.NewService(workerId, config.GetTaskPerWorker())
 	tc := taskProto.NewTaskClient(conn)
 
-	// Register workerId
-	_, err = tc.RegisterFromWorker(context.Background(), &taskProto.RegisterFromWorkerRequest{
-		WorkerId: workerId,
-		TaskIds:  ts.GetIds(),
-	})
-	if err != nil {
-		log.Fatalf("could not register ids: %v", err)
-	}
-
 	// Act
 	go grpc_streaming.WorkerHandleStream[taskProto.RequestFromServerRequest, taskProto.RequestFromServerResponse, taskProto.Task_RequestFromServerClient](workerId, tc.RequestFromServer, ts.HandleRequest)
 

@@ -21,10 +21,11 @@ func NewClient(conn *grpc.ClientConn) *Client {
 	}
 }
 
-func (c *Client) GetInfo(ctx context.Context, taskId string) error {
+func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) error {
 	// Arrange
 	req := &taskProto.RequestFromClientRequest{
-		TaskId: taskId,
+		WorkerId: workerId,
+		TaskId:   taskId,
 	}
 
 	ctx, span := jaeger.Tracer().Start(ctx, "get task")
@@ -38,7 +39,7 @@ func (c *Client) GetInfo(ctx context.Context, taskId string) error {
 		return err
 	}
 
-	log.Printf("task id: %s, task message: %s", res.GetTaskId(), res.GetTaskMessage())
+	log.Printf("worker id: %s, task id: %s, task message: %s", res.GetWorkerId(), res.GetTaskId(), res.GetTaskMessage())
 
 	span.AddEvent("receive result")
 

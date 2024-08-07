@@ -5,36 +5,13 @@ import (
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
-	"time"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-
-	"context"
 )
-
-func (s *Server) RegisterFromWorker(context context.Context, req *taskProto.RegisterFromWorkerRequest) (*taskProto.RegisterFromWorkerResponse, error) {
-	for _, taskId := range req.GetTaskIds() {
-		s.taskIdWorkerMap.Set(taskId, req.GetWorkerId())
-	}
-
-	log.Printf("RegisterFromWorker worker id: %v", req.GetWorkerId())
-
-	return &taskProto.RegisterFromWorkerResponse{}, nil
-}
-
-func (s *Server) UnregisterFromWorker(workerId string) {
-	for t := range s.taskIdWorkerMap.IterBuffered() {
-		if t.Val == workerId {
-			s.taskIdWorkerMap.Remove(t.Key)
-		}
-	}
-
-	log.Printf("UnregisterFromWorker worker id: %v", workerId)
-}
 
 func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer) error {
 	// Read metadata from client
@@ -66,26 +43,14 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 		}
 	}()
 
-	go func() {
-		for {
-			count := outputChanMap.Count()
-			if count > 0 {
-				log.Printf("worker id: %v, outputChanMap: %d", workerId, count)
-			}
-			time.Sleep(5 * time.Second)
-		}
-	}()
-
 	// Receive from worker, send to client
 	for {
 		res, err := stream.Recv()
 		if err == io.EOF {
-			s.UnregisterFromWorker(workerId)
 			s.inputChanMap.Remove(workerId)
 			return nil
 		}
 		if err != nil {
-			s.UnregisterFromWorker(workerId)
 			s.inputChanMap.Remove(workerId)
 			return err
 		}

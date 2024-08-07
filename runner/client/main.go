@@ -69,12 +69,13 @@ func main() {
 
 			go func() {
 				start := time.Now()
-				taskId := fmt.Sprintf("task_%s_%04d", fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1), rand.IntN(config.GetTaskPerWorker())+1)
+				workerId := fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1)
+				taskId := fmt.Sprintf("task_%s_%04d", workerId, rand.IntN(config.GetTaskPerWorker())+1)
 
-				err := taskClient.GetInfo(context.Background(), taskId)
+				err := taskClient.GetInfo(context.Background(), workerId, taskId)
 				duration := time.Since(start)
 				if err != nil {
-					log.Printf("task id: %s, error: %v", taskId, err)
+					log.Printf("worker id: %s, task id: %s, error: %v", workerId, taskId, err)
 					failNum++
 					prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 				} else {

@@ -17,30 +17,24 @@ import (
 )
 
 func (s *Server) RequestFromClient(context context.Context, req *taskProto.RequestFromClientRequest) (*taskProto.RequestFromClientResponse, error) {
-	// Check task exist
-	workerId, ok := s.taskIdWorkerMap.Get(req.GetTaskId())
-	if !ok {
-		return nil, status.Error(codes.NotFound, "task not found")
-	}
-
 	// Monitoring
 	start := time.Now()
 	prometheus.RequestNum.Inc()
 
 	// Arrange
 	requestId := helper.RandString(10)
-	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, workerId, req.GetTaskId())
+	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, req.GetWorkerId(), req.GetTaskId())
 
 	// Jaeger
 	_, span := jaeger.Tracer().Start(context, "request_from_client")
+	span.SetAttributes(attribute.String("worker_id", req.GetWorkerId()))
 	span.SetAttributes(attribute.String("task_id", req.GetTaskId()))
 	span.SetAttributes(attribute.String("request_id", requestId))
-	span.SetAttributes(attribute.String("worker_id", workerId))
 	span.AddEvent("init")
 	defer span.End()
 
 	// Send to input channel
-	inputChan, ok := s.inputChanMap.Get(workerId)
+	inputChan, ok := s.inputChanMap.Get(req.GetWorkerId())
 	if !ok {
 		return nil, status.Error(codes.NotFound, "worker channel not found")
 	}
@@ -48,7 +42,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	outputChan := make(chan *taskProto.RequestFromServerResponse)
 	defer close(outputChan)
 
-	outputChanMap, ok := s.outputChanMap.Get(workerId)
+	outputChanMap, ok := s.outputChanMap.Get(req.GetWorkerId())
 	if !ok {
 		return nil, status.Error(codes.NotFound, "worker channel not found")
 	}

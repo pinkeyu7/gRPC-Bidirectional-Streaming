@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskClient interface {
-	RegisterFromWorker(ctx context.Context, in *RegisterFromWorkerRequest, opts ...grpc.CallOption) (*RegisterFromWorkerResponse, error)
 	RequestFromClient(ctx context.Context, in *RequestFromClientRequest, opts ...grpc.CallOption) (*RequestFromClientResponse, error)
 	RequestFromServer(ctx context.Context, opts ...grpc.CallOption) (Task_RequestFromServerClient, error)
 }
@@ -33,15 +32,6 @@ type taskClient struct {
 
 func NewTaskClient(cc grpc.ClientConnInterface) TaskClient {
 	return &taskClient{cc}
-}
-
-func (c *taskClient) RegisterFromWorker(ctx context.Context, in *RegisterFromWorkerRequest, opts ...grpc.CallOption) (*RegisterFromWorkerResponse, error) {
-	out := new(RegisterFromWorkerResponse)
-	err := c.cc.Invoke(ctx, "/task.Task/RegisterFromWorker", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *taskClient) RequestFromClient(ctx context.Context, in *RequestFromClientRequest, opts ...grpc.CallOption) (*RequestFromClientResponse, error) {
@@ -88,7 +78,6 @@ func (x *taskRequestFromServerClient) Recv() (*RequestFromServerRequest, error) 
 // All implementations must embed UnimplementedTaskServer
 // for forward compatibility
 type TaskServer interface {
-	RegisterFromWorker(context.Context, *RegisterFromWorkerRequest) (*RegisterFromWorkerResponse, error)
 	RequestFromClient(context.Context, *RequestFromClientRequest) (*RequestFromClientResponse, error)
 	RequestFromServer(Task_RequestFromServerServer) error
 	mustEmbedUnimplementedTaskServer()
@@ -98,9 +87,6 @@ type TaskServer interface {
 type UnimplementedTaskServer struct {
 }
 
-func (UnimplementedTaskServer) RegisterFromWorker(context.Context, *RegisterFromWorkerRequest) (*RegisterFromWorkerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterFromWorker not implemented")
-}
 func (UnimplementedTaskServer) RequestFromClient(context.Context, *RequestFromClientRequest) (*RequestFromClientResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestFromClient not implemented")
 }
@@ -118,24 +104,6 @@ type UnsafeTaskServer interface {
 
 func RegisterTaskServer(s grpc.ServiceRegistrar, srv TaskServer) {
 	s.RegisterService(&Task_ServiceDesc, srv)
-}
-
-func _Task_RegisterFromWorker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterFromWorkerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TaskServer).RegisterFromWorker(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/task.Task/RegisterFromWorker",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServer).RegisterFromWorker(ctx, req.(*RegisterFromWorkerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Task_RequestFromClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -189,10 +157,6 @@ var Task_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "task.Task",
 	HandlerType: (*TaskServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "RegisterFromWorker",
-			Handler:    _Task_RegisterFromWorker_Handler,
-		},
 		{
 			MethodName: "RequestFromClient",
 			Handler:    _Task_RequestFromClient_Handler,

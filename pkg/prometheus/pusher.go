@@ -64,7 +64,6 @@ func (p *Pusher) Push() {
 		Collector(RequestNum).
 		Collector(WorkerRequestNum).
 		Collector(ResponseNum).
-		Collector(TaskIdWorkerNum).
 		Collector(InputChanNum).
 		Collector(OutputChanNum).
 		Collector(ResponseTime).

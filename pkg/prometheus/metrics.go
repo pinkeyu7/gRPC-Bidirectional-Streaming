@@ -46,11 +46,6 @@ var (
 		Help: "response_num",
 	})
 
-	TaskIdWorkerNum = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "task_id_worker_num",
-		Help: "task_id_worker_num",
-	})
-
 	InputChanNum = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "input_chan_num",
 		Help: "input_chan_num",

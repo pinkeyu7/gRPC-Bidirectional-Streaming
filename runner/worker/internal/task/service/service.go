@@ -38,17 +38,6 @@ func (s *Service) GetIds() []string {
 	return taskIds
 }
 
-func (s *Service) GetInfo(taskId string) (string, error) {
-	// Find task
-	for _, t := range s.Tasks {
-		if t.Id == taskId {
-			return t.Message, nil
-		}
-	}
-
-	return "", nil
-}
-
 func (s *Service) HandleRequest(req *taskProto.RequestFromServerRequest) (*taskProto.RequestFromServerResponse, error) {
 	taskMessage := ""
 	for _, t := range s.Tasks {
