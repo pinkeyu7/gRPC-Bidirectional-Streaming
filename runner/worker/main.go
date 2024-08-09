@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
-	grpc_streaming "grpc-bidirectional-streaming/pkg/grpc-streaming"
+	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
 	"log"
 	"net"
+	"os/signal"
+	"syscall"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -46,12 +48,23 @@ func main() {
 	}
 	defer conn.Close()
 
+	// Arrange context
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
 	// Init task service
 	ts := taskService.NewService(workerId, config.GetTaskPerWorker())
 	tc := taskProto.NewTaskClient(conn)
 
 	// Act
-	go grpc_streaming.WorkerHandleStream[taskProto.RequestFromServerRequest, taskProto.RequestFromServerResponse, taskProto.Task_RequestFromServerClient](workerId, tc.RequestFromServer, ts.HandleRequest)
+	tsc := grpc_streaming.NewStreamingClient(workerId, tc.RequestFromServer, ts.HandleRequest)
+	go tsc.HandleStream(ctx)
 
-	select {}
+	// Graceful shutdown
+	<-ctx.Done()
+	log.Println("worker shutting down - start")
+	tsc.Shutdown()
+
+	time.Sleep(10 * time.Second)
+	log.Println("worker shutting down - done")
 }

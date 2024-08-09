@@ -29,15 +29,6 @@ func NewService(workerId string, taskNumber int) task.Service {
 	}
 }
 
-func (s *Service) GetIds() []string {
-	taskIds := make([]string, len(s.Tasks))
-	for i, t := range s.Tasks {
-		taskIds[i] = t.Id
-	}
-
-	return taskIds
-}
-
 func (s *Service) HandleRequest(req *taskProto.RequestFromServerRequest) (*taskProto.RequestFromServerResponse, error) {
 	taskMessage := ""
 	for _, t := range s.Tasks {

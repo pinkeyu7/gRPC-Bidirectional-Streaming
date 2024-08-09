@@ -36,11 +36,6 @@ var (
 		Help: "request_num",
 	})
 
-	WorkerRequestNum = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "worker_request_num",
-		Help: "worker_request_num",
-	})
-
 	ResponseNum = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "response_num",
 		Help: "response_num",

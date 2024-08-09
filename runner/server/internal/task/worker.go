@@ -20,7 +20,7 @@ func (s *Server) RequestFromServer(stream taskProto.Task_RequestFromServerServer
 		return status.Errorf(codes.DataLoss, "failed to get metadata")
 	}
 	workerId := ""
-	if rs, ok := md["worker_id"]; ok {
+	if rs, ok := md["client_id"]; ok {
 		for _, wid := range rs {
 			workerId = wid
 		}
