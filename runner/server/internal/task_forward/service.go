@@ -38,6 +38,7 @@ func (s *Service) Foo(context context.Context, req *dto.FooRequest) (*dto.FooRes
 	}
 
 	return &dto.FooResponse{
+		WorkerId:    req.WorkerId,
 		TaskId:      res.GetTaskId(),
 		TaskMessage: res.GetTaskMessage(),
 	}, nil

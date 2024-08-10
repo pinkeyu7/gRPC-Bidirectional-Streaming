@@ -54,7 +54,8 @@ func main() {
 	defer stop()
 
 	// Init task service
-	ts := task.NewService(workerId, config.GetTaskPerWorker())
+	ts := task.NewService()
+	ts.InitTaskMessage(workerId, config.GetTaskPerWorker())
 	tfc := taskForwardProto.NewTaskForwardClient(conn)
 
 	// Act

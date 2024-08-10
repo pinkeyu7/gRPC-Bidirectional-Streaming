@@ -2,9 +2,14 @@ package task
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"log"
+
+	cmap "github.com/orcaman/concurrent-map/v2"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -12,12 +17,21 @@ import (
 )
 
 type Client struct {
-	taskClient taskProto.TaskClient
+	taskClient   taskProto.TaskClient
+	taskMessages cmap.ConcurrentMap[string, string]
 }
 
 func NewClient(conn *grpc.ClientConn) *Client {
 	return &Client{
-		taskClient: taskProto.NewTaskClient(conn),
+		taskClient:   taskProto.NewTaskClient(conn),
+		taskMessages: cmap.New[string](),
+	}
+}
+
+func (c *Client) InitTaskMessage(workerId string, taskNumber int) {
+	for i := 0; i < taskNumber; i++ {
+		taskId := fmt.Sprintf("task_%s_%04d", workerId, i+1)
+		c.taskMessages.Set(taskId, helper.Sha1Str(taskId))
 	}
 }
 
@@ -40,6 +54,15 @@ func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) er
 	}
 
 	log.Printf("worker id: %s, task id: %s, task message: %s", res.GetWorkerId(), res.GetTaskId(), res.GetTaskMessage())
+
+	// Validation
+	taskMessage, ok := c.taskMessages.Get(taskId)
+	if !ok {
+		return errors.New("task not found")
+	}
+	if res.GetTaskMessage() != taskMessage {
+		return errors.New("task message error")
+	}
 
 	span.AddEvent("receive result")
 

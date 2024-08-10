@@ -56,6 +56,8 @@ func main() {
 
 	// Init task service
 	taskClient := task.NewClient(conn)
+	taskClient.InitTaskMessage(config.GetWorkerId(), config.GetTaskPerWorker())
+
 	successNum := 0
 	failNum := 0
 
