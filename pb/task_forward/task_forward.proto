@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "/task_forward";
+
+package task_forward;
+
+service TaskForward {
+  rpc Foo (stream FooResponse) returns (stream FooRequest) {}
+}
+
+message FooRequest {
+  string RequestId = 1;
+  string TaskId = 2;
+}
+
+message FooResponse {
+  string RequestId = 1;
+  string TaskId = 2;
+  string TaskMessage = 3;
+}

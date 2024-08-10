@@ -22,8 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskClient interface {
-	RequestFromClient(ctx context.Context, in *RequestFromClientRequest, opts ...grpc.CallOption) (*RequestFromClientResponse, error)
-	RequestFromServer(ctx context.Context, opts ...grpc.CallOption) (Task_RequestFromServerClient, error)
+	Foo(ctx context.Context, in *FooRequest, opts ...grpc.CallOption) (*FooResponse, error)
 }
 
 type taskClient struct {
@@ -34,52 +33,20 @@ func NewTaskClient(cc grpc.ClientConnInterface) TaskClient {
 	return &taskClient{cc}
 }
 
-func (c *taskClient) RequestFromClient(ctx context.Context, in *RequestFromClientRequest, opts ...grpc.CallOption) (*RequestFromClientResponse, error) {
-	out := new(RequestFromClientResponse)
-	err := c.cc.Invoke(ctx, "/task.Task/RequestFromClient", in, out, opts...)
+func (c *taskClient) Foo(ctx context.Context, in *FooRequest, opts ...grpc.CallOption) (*FooResponse, error) {
+	out := new(FooResponse)
+	err := c.cc.Invoke(ctx, "/task.Task/Foo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *taskClient) RequestFromServer(ctx context.Context, opts ...grpc.CallOption) (Task_RequestFromServerClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Task_ServiceDesc.Streams[0], "/task.Task/RequestFromServer", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &taskRequestFromServerClient{stream}
-	return x, nil
-}
-
-type Task_RequestFromServerClient interface {
-	Send(*RequestFromServerResponse) error
-	Recv() (*RequestFromServerRequest, error)
-	grpc.ClientStream
-}
-
-type taskRequestFromServerClient struct {
-	grpc.ClientStream
-}
-
-func (x *taskRequestFromServerClient) Send(m *RequestFromServerResponse) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *taskRequestFromServerClient) Recv() (*RequestFromServerRequest, error) {
-	m := new(RequestFromServerRequest)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 // TaskServer is the server API for Task service.
 // All implementations must embed UnimplementedTaskServer
 // for forward compatibility
 type TaskServer interface {
-	RequestFromClient(context.Context, *RequestFromClientRequest) (*RequestFromClientResponse, error)
-	RequestFromServer(Task_RequestFromServerServer) error
+	Foo(context.Context, *FooRequest) (*FooResponse, error)
 	mustEmbedUnimplementedTaskServer()
 }
 
@@ -87,11 +54,8 @@ type TaskServer interface {
 type UnimplementedTaskServer struct {
 }
 
-func (UnimplementedTaskServer) RequestFromClient(context.Context, *RequestFromClientRequest) (*RequestFromClientResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RequestFromClient not implemented")
-}
-func (UnimplementedTaskServer) RequestFromServer(Task_RequestFromServerServer) error {
-	return status.Errorf(codes.Unimplemented, "method RequestFromServer not implemented")
+func (UnimplementedTaskServer) Foo(context.Context, *FooRequest) (*FooResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Foo not implemented")
 }
 func (UnimplementedTaskServer) mustEmbedUnimplementedTaskServer() {}
 
@@ -106,48 +70,22 @@ func RegisterTaskServer(s grpc.ServiceRegistrar, srv TaskServer) {
 	s.RegisterService(&Task_ServiceDesc, srv)
 }
 
-func _Task_RequestFromClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RequestFromClientRequest)
+func _Task_Foo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FooRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServer).RequestFromClient(ctx, in)
+		return srv.(TaskServer).Foo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/task.Task/RequestFromClient",
+		FullMethod: "/task.Task/Foo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServer).RequestFromClient(ctx, req.(*RequestFromClientRequest))
+		return srv.(TaskServer).Foo(ctx, req.(*FooRequest))
 	}
 	return interceptor(ctx, in, info, handler)
-}
-
-func _Task_RequestFromServer_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TaskServer).RequestFromServer(&taskRequestFromServerServer{stream})
-}
-
-type Task_RequestFromServerServer interface {
-	Send(*RequestFromServerRequest) error
-	Recv() (*RequestFromServerResponse, error)
-	grpc.ServerStream
-}
-
-type taskRequestFromServerServer struct {
-	grpc.ServerStream
-}
-
-func (x *taskRequestFromServerServer) Send(m *RequestFromServerRequest) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *taskRequestFromServerServer) Recv() (*RequestFromServerResponse, error) {
-	m := new(RequestFromServerResponse)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 // Task_ServiceDesc is the grpc.ServiceDesc for Task service.
@@ -158,17 +96,10 @@ var Task_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TaskServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RequestFromClient",
-			Handler:    _Task_RequestFromClient_Handler,
+			MethodName: "Foo",
+			Handler:    _Task_Foo_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "RequestFromServer",
-			Handler:       _Task_RequestFromServer_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "pb/task/task.proto",
 }

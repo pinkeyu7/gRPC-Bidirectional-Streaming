@@ -1,9 +1,10 @@
-package task
+package task_forward
 
 import (
 	"context"
 	"grpc-bidirectional-streaming/config"
-	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/dto"
+	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
@@ -11,46 +12,51 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) RequestFromClient(context context.Context, req *taskProto.RequestFromClientRequest) (*taskProto.RequestFromClientResponse, error) {
+type Service struct {
+	server *Server
+}
+
+func NewService(s *Server) *Service {
+	return &Service{
+		server: s,
+	}
+}
+
+func (s *Service) Foo(context context.Context, req *dto.FooRequest) (*dto.FooResponse, error) {
 	// Monitoring
 	start := time.Now()
 	prometheus.RequestNum.Inc()
 
 	// Arrange
 	requestId := helper.RandString(10)
-	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, req.GetWorkerId(), req.GetTaskId())
+	log.Printf("Received: request id: %s, worker id: %s, task id: %s", requestId, req.WorkerId, req.TaskId)
 
 	// Jaeger
 	_, span := jaeger.Tracer().Start(context, "request_from_client")
-	span.SetAttributes(attribute.String("worker_id", req.GetWorkerId()))
-	span.SetAttributes(attribute.String("task_id", req.GetTaskId()))
+	span.SetAttributes(attribute.String("worker_id", req.WorkerId))
+	span.SetAttributes(attribute.String("task_id", req.TaskId))
 	span.SetAttributes(attribute.String("request_id", requestId))
 	span.AddEvent("init")
 	defer span.End()
 
 	// Send to input channel
-	inputChan, ok := s.inputChanMap.Get(req.GetWorkerId())
+	inputChan, ok := s.server.RequestChanMap.Get(req.WorkerId)
 	if !ok {
 		return nil, status.Error(codes.NotFound, "worker channel not found")
 	}
 
-	outputChan := make(chan *taskProto.RequestFromServerResponse)
+	outputChan := make(chan *taskForwardProto.FooResponse)
 	defer close(outputChan)
 
-	outputChanMap, ok := s.outputChanMap.Get(req.GetWorkerId())
-	if !ok {
-		return nil, status.Error(codes.NotFound, "worker channel not found")
-	}
-	outputChanMap.Set(requestId, &outputChan)
+	s.server.ResponseChanMap.Set(requestId, &outputChan)
 
-	reqFromWorker := &taskProto.RequestFromServerRequest{
+	reqFromWorker := &taskForwardProto.FooRequest{
 		RequestId: requestId,
-		TaskId:    req.GetTaskId(),
+		TaskId:    req.TaskId,
 	}
 	*inputChan <- reqFromWorker
 
@@ -59,7 +65,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 	// Return
 	select {
 	case resFromWorker := <-outputChan:
-		res := &taskProto.RequestFromClientResponse{
+		res := &dto.FooResponse{
 			TaskId:      resFromWorker.GetTaskId(),
 			TaskMessage: resFromWorker.GetTaskMessage(),
 		}
@@ -76,7 +82,7 @@ func (s *Server) RequestFromClient(context context.Context, req *taskProto.Reque
 
 		span.AddEvent("timeout")
 
-		outputChanMap.Remove(requestId)
+		s.server.ResponseChanMap.Remove(requestId)
 		return nil, status.Errorf(codes.Aborted, "reach timeout")
 	}
 }

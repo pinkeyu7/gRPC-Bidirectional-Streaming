@@ -41,14 +41,14 @@ var (
 		Help: "response_num",
 	})
 
-	InputChanNum = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "input_chan_num",
-		Help: "input_chan_num",
+	RequestChanNum = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "request_chan_num",
+		Help: "request_chan_num",
 	})
 
-	OutputChanNum = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "output_chan_num",
-		Help: "output_chan_num",
+	ResponseChanNum = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "response_chan_num",
+		Help: "response_chan_num",
 	})
 
 	ResponseTime = prometheus.NewHistogramVec(prometheus.HistogramOpts{

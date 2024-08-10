@@ -5,28 +5,17 @@ option go_package = "/task";
 package task;
 
 service Task {
-  rpc RequestFromClient (RequestFromClientRequest) returns (RequestFromClientResponse) {}
-  rpc RequestFromServer (stream RequestFromServerResponse) returns (stream RequestFromServerRequest) {}
+  rpc Foo (FooRequest) returns (FooResponse) {}
 }
 
-message RequestFromClientRequest {
+message FooRequest {
   string WorkerId = 1;
   string TaskId = 2;
 }
 
-message RequestFromClientResponse {
+message FooResponse {
   string WorkerId = 1;
   string TaskId = 2;
   string TaskMessage = 3;
 }
 
-message RequestFromServerRequest {
-  string RequestId = 1;
-  string TaskId = 2;
-}
-
-message RequestFromServerResponse {
-  string RequestId = 1;
-  string TaskId = 2;
-  string TaskMessage = 3;
-}

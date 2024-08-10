@@ -63,8 +63,8 @@ func (p *Pusher) Push() {
 		Collector(goroutineNum).
 		Collector(RequestNum).
 		Collector(ResponseNum).
-		Collector(InputChanNum).
-		Collector(OutputChanNum).
+		Collector(RequestChanNum).
+		Collector(ResponseChanNum).
 		Collector(ResponseTime).
 		Add()
 

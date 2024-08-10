@@ -4,10 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
-	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/runner/worker/internal/task"
+
+	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/prometheus"
-	taskService "grpc-bidirectional-streaming/runner/worker/internal/task/service"
 	"log"
 	"net"
 	"os/signal"
@@ -53,11 +54,11 @@ func main() {
 	defer stop()
 
 	// Init task service
-	ts := taskService.NewService(workerId, config.GetTaskPerWorker())
-	tc := taskProto.NewTaskClient(conn)
+	ts := task.NewService(workerId, config.GetTaskPerWorker())
+	tfc := taskForwardProto.NewTaskForwardClient(conn)
 
 	// Act
-	tsc := grpc_streaming.NewStreamingClient(workerId, tc.RequestFromServer, ts.HandleRequest)
+	tsc := grpc_streaming.NewStreamingClient(workerId, tfc.Foo, ts.HandleRequest)
 	go tsc.HandleStream(ctx)
 
 	// Graceful shutdown

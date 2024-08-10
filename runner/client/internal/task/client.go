@@ -23,7 +23,7 @@ func NewClient(conn *grpc.ClientConn) *Client {
 
 func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) error {
 	// Arrange
-	req := &taskProto.RequestFromClientRequest{
+	req := &taskProto.FooRequest{
 		WorkerId: workerId,
 		TaskId:   taskId,
 	}
@@ -34,7 +34,7 @@ func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) er
 	defer span.End()
 
 	// Act
-	res, err := c.taskClient.RequestFromClient(ctx, req)
+	res, err := c.taskClient.Foo(ctx, req)
 	if err != nil {
 		return err
 	}

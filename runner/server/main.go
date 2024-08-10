@@ -4,9 +4,11 @@ import (
 	"context"
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/server/internal/task"
+	"grpc-bidirectional-streaming/runner/server/internal/task_forward"
 	"log"
 	"net"
 	"os"
@@ -55,11 +57,13 @@ func main() {
 	pusher.Start()
 
 	// Init
-	ts := task.NewServer()
+	tfgs := task_forward.NewServer()
+	tfs := task_forward.NewService(tfgs)
+	tgs := task.NewServer(tfs)
 
 	go func() {
 		for {
-			ts.Monitor()
+			tfgs.Monitor()
 			time.Sleep(5 * time.Second)
 		}
 	}()
@@ -72,7 +76,8 @@ func main() {
 
 	// Start Server
 	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
-	taskProto.RegisterTaskServer(s, ts)
+	taskForwardProto.RegisterTaskForwardServer(s, tfgs)
+	taskProto.RegisterTaskServer(s, tgs)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
