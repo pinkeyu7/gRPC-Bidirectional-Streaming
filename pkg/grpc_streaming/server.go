@@ -17,7 +17,7 @@ type StreamingServerObject[Request any, Response any] interface {
 	Recv() (*Response, error)
 }
 
-type StreamingServer[Request any, Response any, Client StreamingServerObject[Request, Response]] struct {
+type StreamingServer[Request any, Response any, Stream StreamingServerObject[Request, Response]] struct {
 	clientId        string
 	funcName        string
 	stream          StreamingServerObject[Request, Response]
