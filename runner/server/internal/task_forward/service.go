@@ -52,7 +52,10 @@ func (s *Service) Foo(context context.Context, req *dto.FooRequest) (*dto.FooRes
 	}
 
 	responseChan := make(chan any)
-	defer close(responseChan)
+	defer func() {
+		s.server.ResponseChanMap.Remove(requestId)
+		close(responseChan)
+	}()
 
 	s.server.ResponseChanMap.Set(requestId, &responseChan)
 
@@ -89,7 +92,6 @@ func (s *Service) Foo(context context.Context, req *dto.FooRequest) (*dto.FooRes
 
 		span.AddEvent("timeout")
 
-		s.server.ResponseChanMap.Remove(requestId)
 		return nil, status.Errorf(codes.Aborted, "reach timeout")
 	}
 }

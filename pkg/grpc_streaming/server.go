@@ -103,7 +103,6 @@ func (s *StreamingServer[Request, Response, Stream]) HandleStream() error {
 
 			// Send to output channel
 			*responseChan <- res
-			s.responseChanMap.Remove(requestId)
 		}(res)
 	}
 }
