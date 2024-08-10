@@ -5,6 +5,7 @@ import (
 	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/dto"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
+	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
@@ -44,27 +45,33 @@ func (s *Service) Foo(context context.Context, req *dto.FooRequest) (*dto.FooRes
 	defer span.End()
 
 	// Send to input channel
-	inputChan, ok := s.server.RequestChanMap.Get(req.WorkerId)
+	requestChanIndex := grpc_streaming.GetChanIndex(req.WorkerId, helper.GetCurrentFunctionName())
+	requestChan, ok := s.server.RequestChanMap.Get(requestChanIndex)
 	if !ok {
 		return nil, status.Error(codes.NotFound, "worker channel not found")
 	}
 
-	outputChan := make(chan *taskForwardProto.FooResponse)
-	defer close(outputChan)
+	responseChan := make(chan any)
+	defer close(responseChan)
 
-	s.server.ResponseChanMap.Set(requestId, &outputChan)
+	s.server.ResponseChanMap.Set(requestId, &responseChan)
 
 	reqFromWorker := &taskForwardProto.FooRequest{
 		RequestId: requestId,
 		TaskId:    req.TaskId,
 	}
-	*inputChan <- reqFromWorker
+	*requestChan <- reqFromWorker
 
-	span.AddEvent("send to inputChan")
+	span.AddEvent("send to requestChan")
 
 	// Return
 	select {
-	case resFromWorker := <-outputChan:
+	case resFromWorkerObj := <-responseChan:
+		resFromWorker, ok := resFromWorkerObj.(*taskForwardProto.FooResponse)
+		if !ok {
+			return nil, status.Errorf(codes.Internal, "response convert error")
+		}
+
 		res := &dto.FooResponse{
 			TaskId:      resFromWorker.GetTaskId(),
 			TaskMessage: resFromWorker.GetTaskMessage(),

@@ -11,20 +11,19 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type StreamObj[Request any, Response any] interface {
+type StreamingClientObject[Request any, Response any] interface {
 	Send(*Response) error
 	Recv() (*Request, error)
-	grpc.ClientStream
 }
 
-type StreamingClient[Request any, Response any, Client StreamObj[Request, Response]] struct {
+type StreamingClient[Request any, Response any, Client StreamingClientObject[Request, Response]] struct {
 	clientId  string
 	handler   func(req *Request) (*Response, error)
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
 	doneChan  chan bool
 }
 
-func NewStreamingClient[Request any, Response any, Client StreamObj[Request, Response]](clientId string, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) *StreamingClient[Request, Response, Client] {
+func NewStreamingClient[Request any, Response any, Client StreamingClientObject[Request, Response]](clientId string, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) *StreamingClient[Request, Response, Client] {
 	return &StreamingClient[Request, Response, Client]{
 		clientId:  clientId,
 		handler:   handleRequest,
