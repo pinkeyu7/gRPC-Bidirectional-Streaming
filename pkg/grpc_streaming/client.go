@@ -2,7 +2,6 @@ package grpc_streaming
 
 import (
 	"context"
-	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
@@ -75,10 +74,6 @@ func (c *StreamingClient[Request, Response, Client]) HandleStream(context contex
 			res, err := c.handler(req)
 			if err != nil {
 				log.Printf("failed to handle request: %v", err)
-			}
-			if helper.IsClosed(responseChan) {
-				log.Printf("responseChan closed")
-				return
 			}
 
 			responseChan <- res
