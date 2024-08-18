@@ -4,44 +4,51 @@ import (
 	"context"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
-	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
 	"time"
 
-	cmap "github.com/orcaman/concurrent-map/v2"
 	"go.opentelemetry.io/otel/attribute"
 
 	"google.golang.org/grpc/metadata"
 )
 
-type StreamingServerObject[Request any, Response any] interface {
+type streamingServerObject[Request any, Response any] interface {
 	Send(*Request) error
 	Recv() (*Response, error)
+	Context() context.Context
 }
 
-type StreamingServer[Request any, Response any, Stream StreamingServerObject[Request, Response]] struct {
-	clientId        string
-	funcName        string
-	stream          StreamingServerObject[Request, Response]
-	requestChanMap  *cmap.ConcurrentMap[string, *chan any]
-	responseChanMap *cmap.ConcurrentMap[string, *chan any]
-	doneChan        chan bool
+type streamingServer[Request any, Response any, Stream streamingServerObject[Request, Response]] struct {
+	clientId       string
+	funcName       string
+	mappingService *MappingService
+	stream         streamingServerObject[Request, Response]
 }
 
-func NewStreamingServer[Request any, Response any, Stream StreamingServerObject[Request, Response]](funcName string, stream Stream, requestChanMap *cmap.ConcurrentMap[string, *chan any], responseChanMap *cmap.ConcurrentMap[string, *chan any]) *StreamingServer[Request, Response, Stream] {
-	return &StreamingServer[Request, Response, Stream]{
-		funcName:        funcName,
-		stream:          stream,
-		requestChanMap:  requestChanMap,
-		responseChanMap: responseChanMap,
-		doneChan:        make(chan bool, 1),
+func NewStreamingServer[Request any, Response any, Stream streamingServerObject[Request, Response]](ms *MappingService, stream Stream) error {
+	s := &streamingServer[Request, Response, Stream]{
+		funcName:       getParentFunctionName(),
+		mappingService: ms,
+		stream:         stream,
 	}
+
+	err := s.setClientId(stream.Context())
+	if err != nil {
+		return err
+	}
+
+	err = s.handleStream()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *StreamingServer[Request, Response, Stream]) SetClientId(context context.Context) error {
+func (s *streamingServer[Request, Response, Stream]) setClientId(context context.Context) error {
 	md, ok := metadata.FromIncomingContext(context)
 	if !ok {
 		return fmt.Errorf("could not extract grpc metadata")
@@ -56,13 +63,16 @@ func (s *StreamingServer[Request, Response, Stream]) SetClientId(context context
 	return fmt.Errorf("could not extract grpc client id")
 }
 
-func (s *StreamingServer[Request, Response, Stream]) HandleStream() error {
+func (s *streamingServer[Request, Response, Stream]) handleStream() error {
+	// Get caller package name
+	var reqStruct Request
+	packageName := getPackageNameFromStruct(reqStruct)
+
 	// Arrange
 	requestChan := make(chan any)
 	defer close(requestChan)
 
-	requestChanIndex := GetChanIndex(s.clientId, s.funcName)
-	s.requestChanMap.Set(requestChanIndex, &requestChan)
+	s.mappingService.SetRequestChan(packageName, s.funcName, s.clientId, &requestChan)
 
 	// Request from client, send to worker
 	go func() {
@@ -83,26 +93,26 @@ func (s *StreamingServer[Request, Response, Stream]) HandleStream() error {
 	for {
 		res, err := s.stream.Recv()
 		if err == io.EOF {
-			s.requestChanMap.Remove(requestChanIndex)
+			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientId)
 			return nil
 		}
 		if err != nil {
-			s.requestChanMap.Remove(requestChanIndex)
+			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientId)
 			return err
 		}
 
 		go func(res *Response) {
 			// Get requestId
-			requestId, err := helper.GetFieldValue(res, "RequestId")
+			requestId, err := getFieldValue(res, "RequestId")
 			if err != nil {
 				log.Printf("failed to print request id: %v", err)
 				return
 			}
 
 			// Send to output channel
-			responseChan, ok := s.responseChanMap.Get(requestId)
-			if !ok {
-				log.Printf("failed to find output channel: request id: %v", requestId)
+			responseChan, err := s.mappingService.GetResponseChan(requestId)
+			if err != nil {
+				log.Printf("request id: %s, error: %v", requestId, err)
 				return
 			}
 
@@ -112,14 +122,10 @@ func (s *StreamingServer[Request, Response, Stream]) HandleStream() error {
 	}
 }
 
-func GetChanIndex(clientId string, funcName string) string {
-	return fmt.Sprintf("%s_%s", clientId, funcName)
-}
-
-func HandleRequest[Request any](context context.Context, clientId string, funcName string, req *Request, requestChanMap *cmap.ConcurrentMap[string, *chan any], responseChanMap *cmap.ConcurrentMap[string, *chan any]) (any, error) {
+func HandleRequest[Request any](context context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
 	// Arrange
-	requestId := helper.RandString(10)
-	err := helper.SetFieldValue(req, "RequestId", requestId)
+	requestId := randString(10)
+	err := setFieldValue(req, "RequestId", requestId)
 	if err != nil {
 		return nil, err
 	}
@@ -139,19 +145,18 @@ func HandleRequest[Request any](context context.Context, clientId string, funcNa
 	defer span.End()
 
 	// Get request chan
-	requestChanIndex := GetChanIndex(clientId, funcName)
-	requestChan, ok := requestChanMap.Get(requestChanIndex)
-	if !ok {
-		return nil, fmt.Errorf("worker channel not found")
+	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), getParentFunctionName(), clientId)
+	if err != nil {
+		return nil, err
 	}
 
 	// Set response chan
 	responseChan := make(chan any)
 	defer func() {
-		responseChanMap.Remove(requestId)
+		mappingService.RemoveResponseChan(requestId)
 		close(responseChan)
 	}()
-	responseChanMap.Set(requestId, &responseChan)
+	mappingService.SetResponseChan(requestId, &responseChan)
 
 	// Send request
 	*requestChan <- req

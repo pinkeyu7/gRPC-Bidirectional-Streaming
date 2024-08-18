@@ -10,34 +10,38 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type StreamingClientObject[Request any, Response any] interface {
+var clientId string
+
+func SetClientId(cId string) {
+	clientId = cId
+}
+
+type streamingClientObject[Request any, Response any] interface {
 	Send(*Response) error
 	Recv() (*Request, error)
 }
 
-type StreamingClient[Request any, Response any, Client StreamingClientObject[Request, Response]] struct {
-	clientId  string
+type streamingClient[Request any, Response any, Client streamingClientObject[Request, Response]] struct {
 	handler   func(req *Request) (*Response, error)
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
-	doneChan  chan bool
 }
 
-func NewStreamingClient[Request any, Response any, Client StreamingClientObject[Request, Response]](clientId string, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) *StreamingClient[Request, Response, Client] {
-	return &StreamingClient[Request, Response, Client]{
-		clientId:  clientId,
+func NewStreamingClient[Request any, Response any, Client streamingClientObject[Request, Response]](context context.Context, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) {
+	c := &streamingClient[Request, Response, Client]{
 		handler:   handleRequest,
 		getStream: getStream,
-		doneChan:  make(chan bool, 1),
 	}
+
+	go c.handleStream(context)
 }
 
-func (c *StreamingClient[Request, Response, Client]) HandleStream(context context.Context) {
+func (c *streamingClient[Request, Response, Client]) handleStream(context context.Context) {
 	// Arrange
 	responseChan := make(chan *Response)
 	defer close(responseChan)
 
 	// Create metadata and context
-	md := metadata.Pairs("client_id", c.clientId)
+	md := metadata.Pairs("client_id", clientId)
 	ctx := metadata.NewOutgoingContext(context, md)
 
 	// Make RPC using the context with the metadata
@@ -52,7 +56,6 @@ func (c *StreamingClient[Request, Response, Client]) HandleStream(context contex
 			if err := stream.Send(req); err != nil {
 				log.Printf("failed to send request: %v", err)
 			}
-			prometheus.ResponseNum.Inc()
 		}
 	}()
 
@@ -71,6 +74,12 @@ func (c *StreamingClient[Request, Response, Client]) HandleStream(context contex
 		prometheus.RequestNum.Inc()
 
 		go func(req *Request) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Println("recover from client closed the stream")
+				}
+			}()
+
 			res, err := c.handler(req)
 			if err != nil {
 				log.Printf("failed to handle request: %v", err)
@@ -79,9 +88,4 @@ func (c *StreamingClient[Request, Response, Client]) HandleStream(context contex
 			responseChan <- res
 		}(req)
 	}
-}
-
-func (c *StreamingClient[Request, Response, Client]) Shutdown() {
-	log.Printf("client id: %s, shutting down", c.clientId)
-	c.doneChan <- true
 }
