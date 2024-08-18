@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
-	"grpc-bidirectional-streaming/runner/worker/internal/task"
+	"grpc-bidirectional-streaming/runner/worker/internal/task_forward"
 
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
@@ -54,19 +54,15 @@ func main() {
 	defer stop()
 
 	// Init task service
-	ts := task.NewService()
-	ts.InitTaskMessage(workerId, config.GetTaskPerWorker())
+	tfs := task_forward.NewService()
+	tfs.InitTaskMessage(workerId, config.GetTaskPerWorker())
 	tfc := taskForwardProto.NewTaskForwardClient(conn)
 
 	// Act
-	tsc := grpc_streaming.NewStreamingClient(workerId, tfc.Foo, ts.HandleRequest)
-	go tsc.HandleStream(ctx)
+	grpc_streaming.SetClientId(workerId)
+	grpc_streaming.NewStreamingClient(ctx, tfc.Foo, tfs.HandleRequest)
 
 	// Graceful shutdown
 	<-ctx.Done()
-	log.Println("worker shutting down - start")
-	tsc.Shutdown()
-
-	time.Sleep(10 * time.Second)
-	log.Println("worker shutting down - done")
+	log.Println("worker shutting down")
 }
