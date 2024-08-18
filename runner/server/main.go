@@ -5,6 +5,7 @@ import (
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
+	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/server/internal/task"
@@ -57,13 +58,14 @@ func main() {
 	pusher.Start()
 
 	// Init
-	tfgs := task_forward.NewServer()
-	tfs := task_forward.NewService(tfgs)
+	ms := grpc_streaming.NewMappingService()
+	tfs := task_forward.NewService(ms)
+	tfgs := task_forward.NewServer(ms)
 	tgs := task.NewServer(tfs)
 
 	go func() {
 		for {
-			tfgs.Monitor()
+			ms.Monitor()
 			time.Sleep(5 * time.Second)
 		}
 	}()

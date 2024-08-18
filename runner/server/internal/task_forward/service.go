@@ -5,29 +5,28 @@ import (
 	"grpc-bidirectional-streaming/dto"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
-	"grpc-bidirectional-streaming/pkg/helper"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Service struct {
-	server *Server
+	mappingService *grpc_streaming.MappingService
 }
 
-func NewService(s *Server) *Service {
+func NewService(ms *grpc_streaming.MappingService) *Service {
 	return &Service{
-		server: s,
+		mappingService: ms,
 	}
 }
 
-func (s *Service) Foo(context context.Context, req *dto.FooRequest) (*dto.FooResponse, error) {
+func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooResponse, error) {
 	// Arrange
 	reqTo := &taskForwardProto.FooRequest{
 		TaskId: req.TaskId,
 	}
 
-	resObj, err := grpc_streaming.HandleRequest(context, req.WorkerId, helper.GetCurrentFunctionName(), reqTo, &s.server.RequestChanMap, &s.server.ResponseChanMap)
+	resObj, err := grpc_streaming.HandleRequest(ctx, s.mappingService, req.WorkerId, reqTo)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
