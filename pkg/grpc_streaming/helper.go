@@ -1,6 +1,7 @@
 package grpc_streaming
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand/v2"
 	"reflect"
@@ -28,8 +29,8 @@ func getPackageNameFromStruct(s interface{}) string {
 	return pkgPaths[len(pkgPaths)-1]
 }
 
-func getParentFunctionName() string {
-	pc, _, _, ok := runtime.Caller(2)
+func getParentFunctionName(skip int) string {
+	pc, _, _, ok := runtime.Caller(skip)
 	if !ok {
 		return "unknown"
 	}
@@ -46,6 +47,40 @@ func getParentFunctionName() string {
 	names := strings.Split(parts[len(parts)-1], ".")
 
 	return names[len(names)-1]
+}
+
+func getError[T any](value T) (*Error, error) {
+	val := reflect.ValueOf(value)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if val.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("value must be a struct")
+	}
+
+	errorField := val.FieldByName("Error")
+	if !errorField.IsValid() {
+		return nil, fmt.Errorf("can not retrieve error field value")
+	}
+
+	errorString, err := json.Marshal(errorField.Interface())
+	if err != nil {
+		return nil, err
+	}
+
+	// Using json string to check error is nil
+	if string(errorString) == "null" {
+		return nil, nil
+	}
+
+	// Convert to error
+	errorFromValue := &Error{}
+	err = json.Unmarshal(errorString, errorFromValue)
+	if err != nil {
+		return nil, err
+	}
+
+	return errorFromValue, nil
 }
 
 func getFieldValue[T any](value T, fieldName string) (string, error) {
@@ -86,5 +121,21 @@ func setFieldValue[T any](obj *T, fieldName string, value any) error {
 	}
 
 	field.Set(fieldValue)
+	return nil
+}
+
+func convert[Source any, Target any](s *Source, t *Target) error {
+	// JSON marshal
+	byteString, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	// JSON unmarshal
+	err = json.Unmarshal(byteString, t)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

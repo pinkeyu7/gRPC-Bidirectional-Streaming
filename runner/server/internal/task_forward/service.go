@@ -6,9 +6,7 @@ import (
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/jaeger"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"log"
 )
 
 type Service struct {
@@ -27,26 +25,18 @@ func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooRespons
 	span.AddEvent("init")
 	defer span.End()
 
-	// Arrange
-	reqTo := &taskForwardProto.FooRequest{
-		TaskId: req.TaskId,
-	}
-
-	resObj, err := grpc_streaming.HandleRequest(ctx, s.mappingService, req.WorkerId, reqTo)
+	res, err := grpc_streaming.ForwardRequestHandler[
+		dto.FooRequest,
+		dto.FooResponse,
+		taskForwardProto.FooRequest,
+		taskForwardProto.FooResponse,
+	](ctx, s.mappingService, req.WorkerId, req)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	res, ok := resObj.(*taskForwardProto.FooResponse)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "response convert error")
+		log.Printf("received error - worker id: %s, task id: %s, error: %s", req.WorkerId, req.TaskId, err.Error())
+		return nil, err
 	}
 
 	span.AddEvent("done")
 
-	return &dto.FooResponse{
-		WorkerId:    req.WorkerId,
-		TaskId:      res.GetTaskId(),
-		TaskMessage: res.GetTaskMessage(),
-	}, nil
+	return res, nil
 }

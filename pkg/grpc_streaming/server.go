@@ -30,7 +30,7 @@ type streamingServer[Request any, Response any, Stream streamingServerObject[Req
 
 func NewStreamingServer[Request any, Response any, Stream streamingServerObject[Request, Response]](ms *MappingService, stream Stream) error {
 	s := &streamingServer[Request, Response, Stream]{
-		funcName:       getParentFunctionName(),
+		funcName:       getParentFunctionName(2),
 		mappingService: ms,
 		stream:         stream,
 	}
@@ -122,7 +122,7 @@ func (s *streamingServer[Request, Response, Stream]) handleStream() error {
 	}
 }
 
-func HandleRequest[Request any](context context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
+func handleRequest[Request any](context context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
 	// Arrange
 	requestId := randString(10)
 	err := setFieldValue(req, "RequestId", requestId)
@@ -138,14 +138,14 @@ func HandleRequest[Request any](context context.Context, mappingService *Mapping
 	log.Printf("Received: request id: %s", requestId)
 
 	// Jaeger
-	_, span := jaeger.Tracer().Start(context, "request_from_client")
+	_, span := jaeger.Tracer().Start(context, "handle_request")
 	span.SetAttributes(attribute.String("worker_id", clientId))
 	span.SetAttributes(attribute.String("request_id", requestId))
 	span.AddEvent("init")
 	defer span.End()
 
 	// Get request chan
-	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), getParentFunctionName(), clientId)
+	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), getParentFunctionName(3), clientId)
 	if err != nil {
 		return nil, err
 	}
@@ -181,4 +181,58 @@ func HandleRequest[Request any](context context.Context, mappingService *Mapping
 
 		return nil, fmt.Errorf("request timeout")
 	}
+}
+
+func ForwardRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (*Reply, error) {
+	// Jaeger
+	ctx, span := jaeger.Tracer().Start(ctx, "forward_request_handler")
+	span.SetAttributes(attribute.String("worker_id", clientId))
+	span.AddEvent("init")
+	defer span.End()
+
+	// Convert dto.request to protobuf.request
+	span.AddEvent("convert dto.request to protobuf.request")
+	var reqTo ProtoRequest
+	err := convert(req, &reqTo)
+	if err != nil {
+		log.Printf("request marshal: %s", err.Error())
+		return nil, fmt.Errorf("request marshal failed")
+	}
+
+	// Handle request
+	span.AddEvent("handle request")
+	resObj, err := handleRequest(ctx, mappingService, clientId, &reqTo)
+	if err != nil {
+		log.Printf("handle request: %s", err.Error())
+		return nil, err
+	}
+
+	// Convert protobuf.response
+	span.AddEvent("convert protobuf.response")
+	res, ok := resObj.(*ProtoReply)
+	if !ok {
+		log.Printf("convert response failed")
+		return nil, fmt.Errorf("convert response failed")
+	}
+
+	// Get error from response
+	span.AddEvent("retrieve error from protobuf.response")
+	errFromRes, err := getError(res)
+	if err != nil {
+		return nil, fmt.Errorf("retrieve error: %s", err.Error())
+	}
+	if errFromRes != nil {
+		return nil, fmt.Errorf("%s", errFromRes.Message)
+	}
+
+	// Convert dto.response
+	span.AddEvent("convert protobuf.response to dto.response")
+	var resTo Reply
+	err = convert(res, &resTo)
+	if err != nil {
+		log.Printf("reply marshal: %s", err.Error())
+		return nil, fmt.Errorf("reply marshal failed")
+	}
+
+	return &resTo, nil
 }
