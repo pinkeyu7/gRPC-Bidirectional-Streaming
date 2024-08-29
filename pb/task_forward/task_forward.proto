@@ -9,12 +9,18 @@ service TaskForward {
 }
 
 message FooRequest {
-  string RequestId = 1;
-  string TaskId = 2;
+  string request_id = 1;
+  string task_id = 2;
 }
 
 message FooResponse {
-  string RequestId = 1;
-  string TaskId = 2;
-  string TaskMessage = 3;
+  ErrorDetails error = 1;
+  string request_id = 2;
+  string task_id = 3;
+  string task_message = 4;
+}
+
+message ErrorDetails {
+  uint32 code = 1;
+  string message = 2;
 }

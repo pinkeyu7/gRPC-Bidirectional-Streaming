@@ -9,13 +9,13 @@ service Task {
 }
 
 message FooRequest {
-  string WorkerId = 1;
-  string TaskId = 2;
+  string worker_id = 1;
+  string task_id = 2;
 }
 
 message FooResponse {
-  string WorkerId = 1;
-  string TaskId = 2;
-  string TaskMessage = 3;
+  string worker_id = 1;
+  string task_id = 2;
+  string task_message = 3;
 }
 
