@@ -29,10 +29,19 @@ func (s *Service) InitTaskMessage(workerId string, taskNumber int) {
 func (s *Service) HandleRequest(req *taskForwardProto.FooRequest) (*taskForwardProto.FooResponse, error) {
 	taskMessage, ok := s.taskMessages.Get(req.GetTaskId())
 	if !ok {
-		return nil, errors.New("task not found")
+		protoError := &taskForwardProto.ErrorDetails{
+			Code:    0,
+			Message: "task not found",
+		}
+
+		return &taskForwardProto.FooResponse{
+			Error:     protoError,
+			RequestId: req.GetRequestId(),
+		}, errors.New("task not found")
 	}
 
 	return &taskForwardProto.FooResponse{
+		Error:       nil,
 		RequestId:   req.GetRequestId(),
 		TaskId:      req.GetTaskId(),
 		TaskMessage: taskMessage,
