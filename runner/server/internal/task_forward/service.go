@@ -5,6 +5,7 @@ import (
 	"grpc-bidirectional-streaming/dto"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
+	"grpc-bidirectional-streaming/pkg/jaeger"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,6 +22,11 @@ func NewService(ms *grpc_streaming.MappingService) *Service {
 }
 
 func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooResponse, error) {
+	// Jaeger
+	ctx, span := jaeger.Tracer().Start(ctx, "request forward")
+	span.AddEvent("init")
+	defer span.End()
+
 	// Arrange
 	reqTo := &taskForwardProto.FooRequest{
 		TaskId: req.TaskId,
@@ -35,6 +41,8 @@ func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooRespons
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "response convert error")
 	}
+
+	span.AddEvent("done")
 
 	return &dto.FooResponse{
 		WorkerId:    req.WorkerId,
