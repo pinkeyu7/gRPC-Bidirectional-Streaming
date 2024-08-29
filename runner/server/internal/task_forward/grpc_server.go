@@ -23,7 +23,7 @@ func (s *Server) Foo(stream taskForwardProto.TaskForward_FooServer) error {
 	// Arrange
 	err := grpc_streaming.NewStreamingServer(s.mappingService, stream)
 	if err != nil {
-		return status.Errorf(codes.Internal, "streaming failed: %v", err)
+		return status.Errorf(codes.Internal, "streaming failed: %s", err.Error())
 	}
 
 	return nil

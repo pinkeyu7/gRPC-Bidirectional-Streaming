@@ -49,7 +49,7 @@ func main() {
 	}
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
+			log.Printf("Error shutting down tracer provider: %s", err.Error())
 		}
 	}()
 
@@ -73,7 +73,7 @@ func main() {
 	// Listen
 	lis, err := net.Listen(config.GetListenNetwork(), config.GetListenAddress())
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("failed to listen: %s", err.Error())
 	}
 
 	// Start Server
@@ -82,6 +82,6 @@ func main() {
 	taskProto.RegisterTaskServer(s, tgs)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("failed to serve: %s", err.Error())
 	}
 }

@@ -45,7 +45,7 @@ func main() {
 			return net.Dial(config.GetListenNetwork(), config.GetListenAddress())
 		}))
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		log.Fatalf("did not connect: %s", err.Error())
 	}
 	defer conn.Close()
 

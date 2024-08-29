@@ -31,7 +31,7 @@ func main() {
 	}
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
-			log.Printf("Error shutting down tracer provider: %v", err)
+			log.Printf("Error shutting down tracer provider: %s", err.Error())
 		}
 	}()
 
@@ -50,7 +50,7 @@ func main() {
 			return net.Dial(config.GetListenNetwork(), config.GetListenAddress())
 		}))
 	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+		log.Fatalf("did not connect: %s", err.Error())
 	}
 	defer conn.Close()
 
@@ -77,7 +77,7 @@ func main() {
 				err := taskClient.GetInfo(context.Background(), workerId, taskId)
 				duration := time.Since(start)
 				if err != nil {
-					log.Printf("worker id: %s, task id: %s, error: %v", workerId, taskId, err)
+					log.Printf("worker id: %s, task id: %s, error: %s", workerId, taskId, err.Error())
 					failNum++
 					prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 				} else {

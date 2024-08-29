@@ -84,7 +84,7 @@ func (s *streamingServer[Request, Response, Stream]) handleStream() error {
 			}
 
 			if err := s.stream.Send(req); err != nil {
-				log.Printf("failed to send request: %v", err)
+				log.Printf("failed to send request: %s", err.Error())
 			}
 		}
 	}()
@@ -105,14 +105,14 @@ func (s *streamingServer[Request, Response, Stream]) handleStream() error {
 			// Get requestId
 			requestId, err := getFieldValue(res, "RequestId")
 			if err != nil {
-				log.Printf("failed to print request id: %v", err)
+				log.Printf("failed to print request id: %s", err.Error())
 				return
 			}
 
 			// Send to output channel
 			responseChan, err := s.mappingService.GetResponseChan(requestId)
 			if err != nil {
-				log.Printf("request id: %s, error: %v", requestId, err)
+				log.Printf("request id: %s, error: %s", requestId, err.Error())
 				return
 			}
 

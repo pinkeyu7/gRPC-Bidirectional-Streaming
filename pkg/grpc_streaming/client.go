@@ -47,14 +47,15 @@ func (c *streamingClient[Request, Response, Client]) handleStream(context contex
 	// Make RPC using the context with the metadata
 	stream, err := c.getStream(ctx)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		log.Printf("error: %s", err.Error())
+		return
 	}
 
 	// Send to server
 	go func() {
 		for req := range responseChan {
 			if err := stream.Send(req); err != nil {
-				log.Printf("failed to send request: %v", err)
+				log.Printf("failed to send request: %s", err.Error())
 			}
 		}
 	}()
@@ -67,7 +68,7 @@ func (c *streamingClient[Request, Response, Client]) handleStream(context contex
 			return
 		}
 		if err != nil {
-			log.Printf("failed to receive request: %v", err)
+			log.Printf("failed to receive request: %s", err.Error())
 			return
 		}
 
@@ -82,7 +83,7 @@ func (c *streamingClient[Request, Response, Client]) handleStream(context contex
 
 			res, err := c.handler(req)
 			if err != nil {
-				log.Printf("failed to handle request: %v", err)
+				log.Printf("failed to handle request: %s", err.Error())
 			}
 
 			responseChan <- res
