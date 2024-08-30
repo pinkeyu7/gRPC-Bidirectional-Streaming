@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskClient interface {
 	Foo(ctx context.Context, in *FooRequest, opts ...grpc.CallOption) (*FooResponse, error)
+	UpnpSearchExample(ctx context.Context, in *UpnpSearchRequest, opts ...grpc.CallOption) (Task_UpnpSearchExampleClient, error)
 }
 
 type taskClient struct {
@@ -42,11 +43,44 @@ func (c *taskClient) Foo(ctx context.Context, in *FooRequest, opts ...grpc.CallO
 	return out, nil
 }
 
+func (c *taskClient) UpnpSearchExample(ctx context.Context, in *UpnpSearchRequest, opts ...grpc.CallOption) (Task_UpnpSearchExampleClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Task_ServiceDesc.Streams[0], "/task.Task/UpnpSearchExample", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &taskUpnpSearchExampleClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Task_UpnpSearchExampleClient interface {
+	Recv() (*UpnpSearchReply, error)
+	grpc.ClientStream
+}
+
+type taskUpnpSearchExampleClient struct {
+	grpc.ClientStream
+}
+
+func (x *taskUpnpSearchExampleClient) Recv() (*UpnpSearchReply, error) {
+	m := new(UpnpSearchReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // TaskServer is the server API for Task service.
 // All implementations must embed UnimplementedTaskServer
 // for forward compatibility
 type TaskServer interface {
 	Foo(context.Context, *FooRequest) (*FooResponse, error)
+	UpnpSearchExample(*UpnpSearchRequest, Task_UpnpSearchExampleServer) error
 	mustEmbedUnimplementedTaskServer()
 }
 
@@ -56,6 +90,9 @@ type UnimplementedTaskServer struct {
 
 func (UnimplementedTaskServer) Foo(context.Context, *FooRequest) (*FooResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Foo not implemented")
+}
+func (UnimplementedTaskServer) UpnpSearchExample(*UpnpSearchRequest, Task_UpnpSearchExampleServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpnpSearchExample not implemented")
 }
 func (UnimplementedTaskServer) mustEmbedUnimplementedTaskServer() {}
 
@@ -88,6 +125,27 @@ func _Task_Foo_Handler(srv interface{}, ctx context.Context, dec func(interface{
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Task_UpnpSearchExample_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UpnpSearchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TaskServer).UpnpSearchExample(m, &taskUpnpSearchExampleServer{stream})
+}
+
+type Task_UpnpSearchExampleServer interface {
+	Send(*UpnpSearchReply) error
+	grpc.ServerStream
+}
+
+type taskUpnpSearchExampleServer struct {
+	grpc.ServerStream
+}
+
+func (x *taskUpnpSearchExampleServer) Send(m *UpnpSearchReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Task_ServiceDesc is the grpc.ServiceDesc for Task service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -100,6 +158,12 @@ var Task_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Task_Foo_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UpnpSearchExample",
+			Handler:       _Task_UpnpSearchExample_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "pb/task/task.proto",
 }
