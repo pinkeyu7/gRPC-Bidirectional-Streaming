@@ -4,8 +4,11 @@ import (
 	"context"
 	"grpc-bidirectional-streaming/dto"
 	taskProto "grpc-bidirectional-streaming/pb/task"
+	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/runner/server/internal/task_forward"
+	"log"
+	"time"
 )
 
 type Server struct {
@@ -40,4 +43,53 @@ func (s *Server) Foo(context context.Context, req *taskProto.FooRequest) (*taskP
 		TaskId:      response.TaskId,
 		TaskMessage: response.TaskMessage,
 	}, nil
+}
+
+func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream taskProto.Task_UpnpSearchExampleServer) error {
+	// Arrange context
+	streamCtx := stream.Context()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Init req
+	reqTo := &dto.UpnpSearchRequest{
+		WorkerId: req.GetWorkerId(),
+	}
+
+	// Init response chan
+	responseChan := make(chan *dto.UpnpSearchReply)
+	defer close(responseChan)
+
+	// Act
+	go s.taskForwardService.UpnpSearch(ctx, reqTo, &responseChan)
+
+	// Handle response
+	for {
+		select {
+		case response, ok := <-responseChan:
+			if !ok {
+				return nil
+			}
+
+			var res taskProto.UpnpSearchReply
+			err := helper.Convert(response, &res)
+			if err != nil {
+				log.Printf("convert response error: %s", err.Error())
+				continue
+			}
+
+			err = stream.Send(&res)
+			if err != nil {
+				log.Printf("send response error: %s", err.Error())
+				continue
+			}
+		case <-streamCtx.Done():
+			log.Println("stream canceled")
+			return nil
+		case <-ctx.Done():
+			log.Println("context done - outside")
+			return nil
+		}
+	}
 }

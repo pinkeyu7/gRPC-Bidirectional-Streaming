@@ -10,3 +10,13 @@ type FooResponse struct {
 	TaskId      string `json:"task_id"`
 	TaskMessage string `json:"task_message"`
 }
+
+type UpnpSearchRequest struct {
+	WorkerId string `json:"worker_id"`
+}
+
+type UpnpSearchReply struct {
+	WorkerId string `json:"worker_id"`
+	Model    string `json:"model"`
+	Ip       string `json:"ip"`
+}
