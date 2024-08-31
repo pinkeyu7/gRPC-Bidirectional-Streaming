@@ -28,3 +28,13 @@ func (s *Server) Foo(stream taskForwardProto.TaskForward_FooServer) error {
 
 	return nil
 }
+
+func (s *Server) UpnpSearch(stream taskForwardProto.TaskForward_UpnpSearchServer) error {
+	// Arrange
+	err := grpc_streaming.NewServer(s.mappingService, stream)
+	if err != nil {
+		return status.Errorf(codes.Internal, "streaming failed: %s", err.Error())
+	}
+
+	return nil
+}
