@@ -101,8 +101,10 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 		}
 	}()
 
+	// Act
 	go s.taskForwardService.UpnpSearch(ctx, reqTo, &responseChan, &errChan)
 
+	// Wait for response
 	select {
 	case err := <-errChan:
 		log.Printf("receive response error: %s", err.Error())
