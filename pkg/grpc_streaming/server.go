@@ -177,7 +177,7 @@ func handleUnaryRequest[Request any](ctx context.Context, mappingService *Mappin
 
 		span.AddEvent("timeout")
 
-		return nil, fmt.Errorf("request timeout")
+		return nil, fmt.Errorf("server - request timeout")
 	}
 }
 

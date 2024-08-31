@@ -111,7 +111,7 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 					log.Printf("failed to get request id: %s", err.Error())
 					return
 				}
-				responseChan <- CreateErrorResponse[Response](requestId, 0, subCtx.Err().Error())
+				responseChan <- CreateErrorResponse[Response](requestId, 0, "client - request timeout")
 			}
 		}(req)
 	}
