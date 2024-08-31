@@ -6,7 +6,7 @@ package task;
 
 service Task {
   rpc Foo (FooRequest) returns (FooResponse) {}
-  rpc UpnpSearchExample(UpnpSearchRequest) returns (stream UpnpSearchReply);
+  rpc UpnpSearchExample(UpnpSearchRequest) returns (stream UpnpSearchResponse);
 }
 
 message FooRequest {
@@ -24,7 +24,7 @@ message UpnpSearchRequest {
   string worker_id = 1;
 }
 
-message UpnpSearchReply {
+message UpnpSearchResponse {
   string worker_id = 1;
   string model = 2;
   string ip = 3;

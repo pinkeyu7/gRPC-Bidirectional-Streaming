@@ -60,7 +60,7 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 	}
 
 	// Init response chan
-	responseChan := make(chan *dto.UpnpSearchReply)
+	responseChan := make(chan *dto.UpnpSearchResponse)
 	defer close(responseChan)
 
 	// Act
@@ -74,7 +74,7 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 				return nil
 			}
 
-			var res taskProto.UpnpSearchReply
+			var res taskProto.UpnpSearchResponse
 			err := helper.Convert(response, &res)
 			if err != nil {
 				log.Printf("convert response error: %s", err.Error())

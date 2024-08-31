@@ -59,7 +59,7 @@ func (c *taskClient) UpnpSearchExample(ctx context.Context, in *UpnpSearchReques
 }
 
 type Task_UpnpSearchExampleClient interface {
-	Recv() (*UpnpSearchReply, error)
+	Recv() (*UpnpSearchResponse, error)
 	grpc.ClientStream
 }
 
@@ -67,8 +67,8 @@ type taskUpnpSearchExampleClient struct {
 	grpc.ClientStream
 }
 
-func (x *taskUpnpSearchExampleClient) Recv() (*UpnpSearchReply, error) {
-	m := new(UpnpSearchReply)
+func (x *taskUpnpSearchExampleClient) Recv() (*UpnpSearchResponse, error) {
+	m := new(UpnpSearchResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func _Task_UpnpSearchExample_Handler(srv interface{}, stream grpc.ServerStream) 
 }
 
 type Task_UpnpSearchExampleServer interface {
-	Send(*UpnpSearchReply) error
+	Send(*UpnpSearchResponse) error
 	grpc.ServerStream
 }
 
@@ -142,7 +142,7 @@ type taskUpnpSearchExampleServer struct {
 	grpc.ServerStream
 }
 
-func (x *taskUpnpSearchExampleServer) Send(m *UpnpSearchReply) error {
+func (x *taskUpnpSearchExampleServer) Send(m *UpnpSearchResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 

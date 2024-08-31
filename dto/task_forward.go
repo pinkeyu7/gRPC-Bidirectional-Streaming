@@ -15,7 +15,7 @@ type UpnpSearchRequest struct {
 	WorkerId string `json:"worker_id"`
 }
 
-type UpnpSearchReply struct {
+type UpnpSearchResponse struct {
 	WorkerId string `json:"worker_id"`
 	Model    string `json:"model"`
 	Ip       string `json:"ip"`

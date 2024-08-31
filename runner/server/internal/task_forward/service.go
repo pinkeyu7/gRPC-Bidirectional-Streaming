@@ -43,14 +43,13 @@ func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooRespons
 	return res, nil
 }
 
-func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, responseChan *chan *dto.UpnpSearchReply) {
+func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, responseChan *chan *dto.UpnpSearchResponse) {
 	// Mock upnp search result
-	resultChan := make(chan *dto.UpnpSearchReply)
+	resultChan := make(chan *dto.UpnpSearchResponse)
 	defer close(resultChan)
 
 	go func() {
 		for result := range resultChan {
-			log.Printf("Received upnp search result: %+v", result)
 			select {
 			case <-ctx.Done():
 				log.Println("context done")
@@ -69,7 +68,7 @@ func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, re
 				}
 			}()
 
-			res := &dto.UpnpSearchReply{
+			res := &dto.UpnpSearchResponse{
 				WorkerId: req.WorkerId,
 				Model:    fmt.Sprintf("upnp_search_%d", i),
 				Ip:       fmt.Sprintf("192.168.1.%d", i),
