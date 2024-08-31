@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskClient interface {
-	Foo(ctx context.Context, in *FooRequest, opts ...grpc.CallOption) (*FooResponse, error)
+	Unary(ctx context.Context, in *UnaryRequest, opts ...grpc.CallOption) (*UnaryResponse, error)
 	UpnpSearchExample(ctx context.Context, in *UpnpSearchRequest, opts ...grpc.CallOption) (Task_UpnpSearchExampleClient, error)
 }
 
@@ -34,9 +34,9 @@ func NewTaskClient(cc grpc.ClientConnInterface) TaskClient {
 	return &taskClient{cc}
 }
 
-func (c *taskClient) Foo(ctx context.Context, in *FooRequest, opts ...grpc.CallOption) (*FooResponse, error) {
-	out := new(FooResponse)
-	err := c.cc.Invoke(ctx, "/task.Task/Foo", in, out, opts...)
+func (c *taskClient) Unary(ctx context.Context, in *UnaryRequest, opts ...grpc.CallOption) (*UnaryResponse, error) {
+	out := new(UnaryResponse)
+	err := c.cc.Invoke(ctx, "/task.Task/Unary", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (x *taskUpnpSearchExampleClient) Recv() (*UpnpSearchResponse, error) {
 // All implementations must embed UnimplementedTaskServer
 // for forward compatibility
 type TaskServer interface {
-	Foo(context.Context, *FooRequest) (*FooResponse, error)
+	Unary(context.Context, *UnaryRequest) (*UnaryResponse, error)
 	UpnpSearchExample(*UpnpSearchRequest, Task_UpnpSearchExampleServer) error
 	mustEmbedUnimplementedTaskServer()
 }
@@ -88,8 +88,8 @@ type TaskServer interface {
 type UnimplementedTaskServer struct {
 }
 
-func (UnimplementedTaskServer) Foo(context.Context, *FooRequest) (*FooResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Foo not implemented")
+func (UnimplementedTaskServer) Unary(context.Context, *UnaryRequest) (*UnaryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Unary not implemented")
 }
 func (UnimplementedTaskServer) UpnpSearchExample(*UpnpSearchRequest, Task_UpnpSearchExampleServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpnpSearchExample not implemented")
@@ -107,20 +107,20 @@ func RegisterTaskServer(s grpc.ServiceRegistrar, srv TaskServer) {
 	s.RegisterService(&Task_ServiceDesc, srv)
 }
 
-func _Task_Foo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FooRequest)
+func _Task_Unary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnaryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TaskServer).Foo(ctx, in)
+		return srv.(TaskServer).Unary(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/task.Task/Foo",
+		FullMethod: "/task.Task/Unary",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TaskServer).Foo(ctx, req.(*FooRequest))
+		return srv.(TaskServer).Unary(ctx, req.(*UnaryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -154,8 +154,8 @@ var Task_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TaskServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Foo",
-			Handler:    _Task_Foo_Handler,
+			MethodName: "Unary",
+			Handler:    _Task_Unary_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

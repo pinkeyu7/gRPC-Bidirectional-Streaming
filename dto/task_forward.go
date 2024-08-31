@@ -1,11 +1,11 @@
 package dto
 
-type FooRequest struct {
+type UnaryRequest struct {
 	WorkerId string `json:"worker_id"`
 	TaskId   string `json:"task_id"`
 }
 
-type FooResponse struct {
+type UnaryResponse struct {
 	WorkerId    string `json:"worker_id"`
 	TaskId      string `json:"task_id"`
 	TaskMessage string `json:"task_message"`

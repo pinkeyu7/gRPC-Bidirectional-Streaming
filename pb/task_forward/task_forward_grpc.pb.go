@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskForwardClient interface {
-	Foo(ctx context.Context, opts ...grpc.CallOption) (TaskForward_FooClient, error)
+	Unary(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UnaryClient, error)
 	UpnpSearch(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UpnpSearchClient, error)
 }
 
@@ -34,31 +34,31 @@ func NewTaskForwardClient(cc grpc.ClientConnInterface) TaskForwardClient {
 	return &taskForwardClient{cc}
 }
 
-func (c *taskForwardClient) Foo(ctx context.Context, opts ...grpc.CallOption) (TaskForward_FooClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[0], "/task_forward.TaskForward/Foo", opts...)
+func (c *taskForwardClient) Unary(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UnaryClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[0], "/task_forward.TaskForward/Unary", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &taskForwardFooClient{stream}
+	x := &taskForwardUnaryClient{stream}
 	return x, nil
 }
 
-type TaskForward_FooClient interface {
-	Send(*FooResponse) error
-	Recv() (*FooRequest, error)
+type TaskForward_UnaryClient interface {
+	Send(*UnaryResponse) error
+	Recv() (*UnaryRequest, error)
 	grpc.ClientStream
 }
 
-type taskForwardFooClient struct {
+type taskForwardUnaryClient struct {
 	grpc.ClientStream
 }
 
-func (x *taskForwardFooClient) Send(m *FooResponse) error {
+func (x *taskForwardUnaryClient) Send(m *UnaryResponse) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *taskForwardFooClient) Recv() (*FooRequest, error) {
-	m := new(FooRequest)
+func (x *taskForwardUnaryClient) Recv() (*UnaryRequest, error) {
+	m := new(UnaryRequest)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (x *taskForwardUpnpSearchClient) Recv() (*UpnpSearchRequest, error) {
 // All implementations must embed UnimplementedTaskForwardServer
 // for forward compatibility
 type TaskForwardServer interface {
-	Foo(TaskForward_FooServer) error
+	Unary(TaskForward_UnaryServer) error
 	UpnpSearch(TaskForward_UpnpSearchServer) error
 	mustEmbedUnimplementedTaskForwardServer()
 }
@@ -109,8 +109,8 @@ type TaskForwardServer interface {
 type UnimplementedTaskForwardServer struct {
 }
 
-func (UnimplementedTaskForwardServer) Foo(TaskForward_FooServer) error {
-	return status.Errorf(codes.Unimplemented, "method Foo not implemented")
+func (UnimplementedTaskForwardServer) Unary(TaskForward_UnaryServer) error {
+	return status.Errorf(codes.Unimplemented, "method Unary not implemented")
 }
 func (UnimplementedTaskForwardServer) UpnpSearch(TaskForward_UpnpSearchServer) error {
 	return status.Errorf(codes.Unimplemented, "method UpnpSearch not implemented")
@@ -128,26 +128,26 @@ func RegisterTaskForwardServer(s grpc.ServiceRegistrar, srv TaskForwardServer) {
 	s.RegisterService(&TaskForward_ServiceDesc, srv)
 }
 
-func _TaskForward_Foo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TaskForwardServer).Foo(&taskForwardFooServer{stream})
+func _TaskForward_Unary_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TaskForwardServer).Unary(&taskForwardUnaryServer{stream})
 }
 
-type TaskForward_FooServer interface {
-	Send(*FooRequest) error
-	Recv() (*FooResponse, error)
+type TaskForward_UnaryServer interface {
+	Send(*UnaryRequest) error
+	Recv() (*UnaryResponse, error)
 	grpc.ServerStream
 }
 
-type taskForwardFooServer struct {
+type taskForwardUnaryServer struct {
 	grpc.ServerStream
 }
 
-func (x *taskForwardFooServer) Send(m *FooRequest) error {
+func (x *taskForwardUnaryServer) Send(m *UnaryRequest) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *taskForwardFooServer) Recv() (*FooResponse, error) {
-	m := new(FooResponse)
+func (x *taskForwardUnaryServer) Recv() (*UnaryResponse, error) {
+	m := new(UnaryResponse)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -189,8 +189,8 @@ var TaskForward_ServiceDesc = grpc.ServiceDesc{
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Foo",
-			Handler:       _TaskForward_Foo_Handler,
+			StreamName:    "Unary",
+			Handler:       _TaskForward_Unary_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

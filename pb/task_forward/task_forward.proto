@@ -5,16 +5,16 @@ option go_package = "/task_forward";
 package task_forward;
 
 service TaskForward {
-  rpc Foo (stream FooResponse) returns (stream FooRequest) {}
+  rpc Unary (stream UnaryResponse) returns (stream UnaryRequest) {}
   rpc UpnpSearch (stream UpnpSearchResponse) returns (stream UpnpSearchRequest) {}
 }
 
-message FooRequest {
+message UnaryRequest {
   string request_id = 1;
   string task_id = 2;
 }
 
-message FooResponse {
+message UnaryResponse {
   ErrorDetails error = 1;
   string request_id = 2;
   string task_id = 3;

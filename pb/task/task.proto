@@ -5,16 +5,16 @@ option go_package = "/task";
 package task;
 
 service Task {
-  rpc Foo (FooRequest) returns (FooResponse) {}
+  rpc Unary (UnaryRequest) returns (UnaryResponse) {}
   rpc UpnpSearchExample(UpnpSearchRequest) returns (stream UpnpSearchResponse);
 }
 
-message FooRequest {
+message UnaryRequest {
   string worker_id = 1;
   string task_id = 2;
 }
 
-message FooResponse {
+message UnaryResponse {
   string worker_id = 1;
   string task_id = 2;
   string task_message = 3;

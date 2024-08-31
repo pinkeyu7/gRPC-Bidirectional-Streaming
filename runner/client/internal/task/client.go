@@ -37,7 +37,7 @@ func (c *Client) InitTaskMessage(workerId string, taskNumber int) {
 
 func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) error {
 	// Arrange
-	req := &taskProto.FooRequest{
+	req := &taskProto.UnaryRequest{
 		WorkerId: workerId,
 		TaskId:   taskId,
 	}
@@ -48,7 +48,7 @@ func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) er
 	defer span.End()
 
 	// Act
-	res, err := c.taskClient.Foo(ctx, req)
+	res, err := c.taskClient.Unary(ctx, req)
 	if err != nil {
 		return err
 	}

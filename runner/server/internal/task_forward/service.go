@@ -19,17 +19,17 @@ func NewService(ms *grpc_streaming.MappingService) *Service {
 	}
 }
 
-func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooResponse, error) {
+func (s *Service) Unary(ctx context.Context, req *dto.UnaryRequest) (*dto.UnaryResponse, error) {
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "request forward")
 	span.AddEvent("init")
 	defer span.End()
 
 	res, err := grpc_streaming.ForwardUnaryRequestHandler[
-		dto.FooRequest,
-		dto.FooResponse,
-		taskForwardProto.FooRequest,
-		taskForwardProto.FooResponse,
+		dto.UnaryRequest,
+		dto.UnaryResponse,
+		taskForwardProto.UnaryRequest,
+		taskForwardProto.UnaryResponse,
 	](ctx, s.mappingService, req.WorkerId, req)
 	if err != nil {
 		log.Printf("received error - worker id: %s, task id: %s, error: %s", req.WorkerId, req.TaskId, err.Error())

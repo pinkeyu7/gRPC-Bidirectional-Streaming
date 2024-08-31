@@ -29,7 +29,7 @@ func (s *Service) InitTaskMessage(workerId string, taskNumber int) {
 	}
 }
 
-func (s *Service) Foo(ctx context.Context, req *taskForwardProto.FooRequest, resChan *chan *taskForwardProto.FooResponse) {
+func (s *Service) Unary(ctx context.Context, req *taskForwardProto.UnaryRequest, resChan *chan *taskForwardProto.UnaryResponse) {
 	// Defer func to prevent sent to close channel
 	defer func() {
 		if r := recover(); r != nil {
@@ -40,11 +40,11 @@ func (s *Service) Foo(ctx context.Context, req *taskForwardProto.FooRequest, res
 	// Act
 	taskMessage, ok := s.taskMessages.Get(req.GetTaskId())
 	if !ok {
-		*resChan <- grpc_streaming.NewErrorResponse[taskForwardProto.FooResponse](req.RequestId, grpc_streaming.ErrorCodeNotFound, "task not found")
+		*resChan <- grpc_streaming.NewErrorResponse[taskForwardProto.UnaryResponse](req.RequestId, grpc_streaming.ErrorCodeNotFound, "task not found")
 	}
 
 	// Return
-	*resChan <- &taskForwardProto.FooResponse{
+	*resChan <- &taskForwardProto.UnaryResponse{
 		Error:       nil,
 		RequestId:   req.GetRequestId(),
 		TaskId:      req.GetTaskId(),

@@ -21,7 +21,7 @@ func NewServer(tfs *task_forward.Service) *Server {
 	return &Server{taskForwardService: tfs}
 }
 
-func (s *Server) Foo(ctx context.Context, req *taskProto.FooRequest) (*taskProto.FooResponse, error) {
+func (s *Server) Unary(ctx context.Context, req *taskProto.UnaryRequest) (*taskProto.UnaryResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, config.GetServerTimeout()*time.Second)
 	defer cancel()
 
@@ -30,19 +30,19 @@ func (s *Server) Foo(ctx context.Context, req *taskProto.FooRequest) (*taskProto
 	span.AddEvent("init")
 	defer span.End()
 
-	request := &dto.FooRequest{
+	request := &dto.UnaryRequest{
 		WorkerId: req.GetWorkerId(),
 		TaskId:   req.TaskId,
 	}
 
-	response, err := s.taskForwardService.Foo(ctx, request)
+	response, err := s.taskForwardService.Unary(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 
 	span.AddEvent("done")
 
-	return &taskProto.FooResponse{
+	return &taskProto.UnaryResponse{
 		WorkerId:    response.WorkerId,
 		TaskId:      response.TaskId,
 		TaskMessage: response.TaskMessage,
