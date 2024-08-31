@@ -54,6 +54,11 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 	ctx, cancel := context.WithTimeout(stream.Context(), config.GetServerTimeout()*time.Second)
 	defer cancel()
 
+	// Jaeger
+	ctx, span := jaeger.Tracer().Start(ctx, "receive request")
+	span.AddEvent("init")
+	defer span.End()
+
 	// Init req
 	reqTo := &dto.UpnpSearchRequest{
 		WorkerId: req.GetWorkerId(),
@@ -63,32 +68,49 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 	responseChan := make(chan *dto.UpnpSearchResponse)
 	defer close(responseChan)
 
+	errChan := make(chan error)
+	defer close(errChan)
+
 	// Act
-	go s.taskForwardService.UpnpSearch(ctx, reqTo, &responseChan)
+	go func() {
+		// Handle response
+		for {
+			select {
+			case response, ok := <-responseChan:
+				if !ok {
+					return
+				}
 
-	// Handle response
-	for {
-		select {
-		case response, ok := <-responseChan:
-			if !ok {
-				return nil
-			}
+				var res taskProto.UpnpSearchResponse
+				err := helper.Convert(response, &res)
+				if err != nil {
+					log.Printf("convert response error: %s", err.Error())
+					errChan <- err
+					return
+				}
 
-			var res taskProto.UpnpSearchResponse
-			err := helper.Convert(response, &res)
-			if err != nil {
-				log.Printf("convert response error: %s", err.Error())
-				continue
+				err = stream.Send(&res)
+				if err != nil {
+					log.Printf("send response error: %s", err.Error())
+					errChan <- err
+					return
+				}
+			case <-ctx.Done():
+				log.Println("context done - grpc - act func")
+				return
 			}
-
-			err = stream.Send(&res)
-			if err != nil {
-				log.Printf("send response error: %s", err.Error())
-				continue
-			}
-		case <-ctx.Done():
-			log.Println("context done - outside")
-			return nil
 		}
+	}()
+
+	go s.taskForwardService.UpnpSearch(ctx, reqTo, &responseChan, &errChan)
+
+	select {
+	case err := <-errChan:
+		span.AddEvent("error")
+		return err
+	case <-ctx.Done():
+		log.Println("context done - grpc")
+		span.AddEvent("context done - grpc")
+		return nil
 	}
 }

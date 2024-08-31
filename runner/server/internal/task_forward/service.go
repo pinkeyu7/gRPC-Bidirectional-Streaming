@@ -2,13 +2,11 @@ package task_forward
 
 import (
 	"context"
-	"fmt"
 	"grpc-bidirectional-streaming/dto"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"log"
-	"time"
 )
 
 type Service struct {
@@ -43,8 +41,13 @@ func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooRespons
 	return res, nil
 }
 
-func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, responseChan *chan *dto.UpnpSearchResponse) {
-	// Mock upnp search result
+func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, responseChan *chan *dto.UpnpSearchResponse, errChan *chan error) {
+	// Jaeger
+	ctx, span := jaeger.Tracer().Start(ctx, "request forward")
+	span.AddEvent("init")
+	defer span.End()
+
+	// Arrange
 	resultChan := make(chan *dto.UpnpSearchResponse)
 	defer close(resultChan)
 
@@ -52,7 +55,7 @@ func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, re
 		for result := range resultChan {
 			select {
 			case <-ctx.Done():
-				log.Println("context done")
+				log.Println("context done - service")
 				return
 			default:
 				*responseChan <- result
@@ -60,22 +63,13 @@ func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, re
 		}
 	}()
 
-	for i := 0; i < 30; i++ {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("error: %v", r)
-				}
-			}()
+	grpc_streaming.ForwardClientStreamRequestHandler[
+		dto.UpnpSearchRequest,
+		dto.UpnpSearchResponse,
+		taskForwardProto.UpnpSearchRequest,
+		taskForwardProto.UpnpSearchResponse,
+	](ctx, s.mappingService, req.WorkerId, req, &resultChan, errChan)
 
-			res := &dto.UpnpSearchResponse{
-				WorkerId: req.WorkerId,
-				Model:    fmt.Sprintf("upnp_search_%d", i),
-				Ip:       fmt.Sprintf("192.168.1.%d", i),
-			}
-
-			resultChan <- res
-		}()
-		time.Sleep(1 * time.Second)
-	}
+	log.Printf("context done - service")
+	span.AddEvent("context done - service")
 }
