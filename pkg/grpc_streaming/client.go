@@ -16,26 +16,26 @@ func SetClientId(cId string) {
 	clientId = cId
 }
 
-type streamingClientObject[Request any, Response any] interface {
+type unaryClientObject[Request any, Response any] interface {
 	Send(*Response) error
 	Recv() (*Request, error)
 }
 
-type streamingClient[Request any, Response any, Client streamingClientObject[Request, Response]] struct {
+type unaryClient[Request any, Response any, Client unaryClientObject[Request, Response]] struct {
 	handler   func(req *Request) (*Response, error)
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
 }
 
-func NewStreamingClient[Request any, Response any, Client streamingClientObject[Request, Response]](context context.Context, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) {
-	c := &streamingClient[Request, Response, Client]{
+func NewUnaryClient[Request any, Response any, Client unaryClientObject[Request, Response]](context context.Context, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) {
+	c := &unaryClient[Request, Response, Client]{
 		handler:   handleRequest,
 		getStream: getStream,
 	}
 
-	go c.handleStream(context)
+	go c.handleUnary(context)
 }
 
-func (c *streamingClient[Request, Response, Client]) handleStream(context context.Context) {
+func (c *unaryClient[Request, Response, Client]) handleUnary(context context.Context) {
 	// Arrange
 	responseChan := make(chan *Response)
 	defer close(responseChan)

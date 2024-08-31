@@ -60,7 +60,7 @@ func main() {
 
 	// Act
 	grpc_streaming.SetClientId(workerId)
-	grpc_streaming.NewStreamingClient(ctx, tfc.Foo, tfs.HandleRequest)
+	grpc_streaming.NewUnaryClient(ctx, tfc.Foo, tfs.Foo)
 
 	// Graceful shutdown
 	<-ctx.Done()

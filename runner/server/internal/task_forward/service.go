@@ -27,7 +27,7 @@ func (s *Service) Foo(ctx context.Context, req *dto.FooRequest) (*dto.FooRespons
 	span.AddEvent("init")
 	defer span.End()
 
-	res, err := grpc_streaming.ForwardRequestHandler[
+	res, err := grpc_streaming.ForwardUnaryRequestHandler[
 		dto.FooRequest,
 		dto.FooResponse,
 		taskForwardProto.FooRequest,

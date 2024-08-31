@@ -26,7 +26,7 @@ func (s *Service) InitTaskMessage(workerId string, taskNumber int) {
 	}
 }
 
-func (s *Service) HandleRequest(req *taskForwardProto.FooRequest) (*taskForwardProto.FooResponse, error) {
+func (s *Service) Foo(req *taskForwardProto.FooRequest) (*taskForwardProto.FooResponse, error) {
 	taskMessage, ok := s.taskMessages.Get(req.GetTaskId())
 	if !ok {
 		protoError := &taskForwardProto.ErrorDetails{

@@ -15,21 +15,21 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type streamingServerObject[Request any, Response any] interface {
+type unaryServerObject[Request any, Response any] interface {
 	Send(*Request) error
 	Recv() (*Response, error)
 	Context() context.Context
 }
 
-type streamingServer[Request any, Response any, Stream streamingServerObject[Request, Response]] struct {
+type unaryServer[Request any, Response any, Stream unaryServerObject[Request, Response]] struct {
 	clientId       string
 	funcName       string
 	mappingService *MappingService
-	stream         streamingServerObject[Request, Response]
+	stream         unaryServerObject[Request, Response]
 }
 
-func NewStreamingServer[Request any, Response any, Stream streamingServerObject[Request, Response]](ms *MappingService, stream Stream) error {
-	s := &streamingServer[Request, Response, Stream]{
+func NewUnaryServer[Request any, Response any, Stream unaryServerObject[Request, Response]](ms *MappingService, stream Stream) error {
+	s := &unaryServer[Request, Response, Stream]{
 		funcName:       getParentFunctionName(2),
 		mappingService: ms,
 		stream:         stream,
@@ -48,7 +48,7 @@ func NewStreamingServer[Request any, Response any, Stream streamingServerObject[
 	return nil
 }
 
-func (s *streamingServer[Request, Response, Stream]) setClientId(context context.Context) error {
+func (s *unaryServer[Request, Response, Stream]) setClientId(context context.Context) error {
 	md, ok := metadata.FromIncomingContext(context)
 	if !ok {
 		return fmt.Errorf("could not extract grpc metadata")
@@ -63,7 +63,7 @@ func (s *streamingServer[Request, Response, Stream]) setClientId(context context
 	return fmt.Errorf("could not extract grpc client id")
 }
 
-func (s *streamingServer[Request, Response, Stream]) handleStream() error {
+func (s *unaryServer[Request, Response, Stream]) handleStream() error {
 	// Get caller package name
 	var reqStruct Request
 	packageName := getPackageNameFromStruct(reqStruct)
@@ -122,7 +122,7 @@ func (s *streamingServer[Request, Response, Stream]) handleStream() error {
 	}
 }
 
-func handleRequest[Request any](context context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
+func handleUnaryRequest[Request any](context context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
 	// Arrange
 	requestId := randString(10)
 	err := setFieldValue(req, "RequestId", requestId)
@@ -183,7 +183,7 @@ func handleRequest[Request any](context context.Context, mappingService *Mapping
 	}
 }
 
-func ForwardRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (*Reply, error) {
+func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (*Reply, error) {
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "forward_request_handler")
 	span.SetAttributes(attribute.String("worker_id", clientId))
@@ -200,8 +200,8 @@ func ForwardRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply 
 	}
 
 	// Handle request
-	span.AddEvent("handle request")
-	resObj, err := handleRequest(ctx, mappingService, clientId, &reqTo)
+	span.AddEvent("handle unary request")
+	resObj, err := handleUnaryRequest(ctx, mappingService, clientId, &reqTo)
 	if err != nil {
 		log.Printf("handle request: %s", err.Error())
 		return nil, err
