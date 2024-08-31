@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/dto"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
@@ -20,9 +21,12 @@ func NewServer(tfs *task_forward.Service) *Server {
 	return &Server{taskForwardService: tfs}
 }
 
-func (s *Server) Foo(context context.Context, req *taskProto.FooRequest) (*taskProto.FooResponse, error) {
+func (s *Server) Foo(ctx context.Context, req *taskProto.FooRequest) (*taskProto.FooResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, config.GetServerTimeout()*time.Second)
+	defer cancel()
+
 	// Jaeger
-	ctx, span := jaeger.Tracer().Start(context, "receive request")
+	ctx, span := jaeger.Tracer().Start(ctx, "receive request")
 	span.AddEvent("init")
 	defer span.End()
 
@@ -47,9 +51,7 @@ func (s *Server) Foo(context context.Context, req *taskProto.FooRequest) (*taskP
 
 func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream taskProto.Task_UpnpSearchExampleServer) error {
 	// Arrange context
-	streamCtx := stream.Context()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(stream.Context(), config.GetServerTimeout()*time.Second)
 	defer cancel()
 
 	// Init req
@@ -84,9 +86,6 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 				log.Printf("send response error: %s", err.Error())
 				continue
 			}
-		case <-streamCtx.Done():
-			log.Println("stream canceled")
-			return nil
 		case <-ctx.Done():
 			log.Println("context done - outside")
 			return nil

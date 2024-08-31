@@ -3,7 +3,6 @@ package grpc_streaming
 import (
 	"context"
 	"fmt"
-	"grpc-bidirectional-streaming/config"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
@@ -48,8 +47,8 @@ func NewUnaryServer[Request any, Response any, Stream unaryServerObject[Request,
 	return nil
 }
 
-func (s *unaryServer[Request, Response, Stream]) setClientId(context context.Context) error {
-	md, ok := metadata.FromIncomingContext(context)
+func (s *unaryServer[Request, Response, Stream]) setClientId(ctx context.Context) error {
+	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return fmt.Errorf("could not extract grpc metadata")
 	}
@@ -122,7 +121,7 @@ func (s *unaryServer[Request, Response, Stream]) handleStream() error {
 	}
 }
 
-func handleUnaryRequest[Request any](context context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
+func handleUnaryRequest[Request any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
 	// Arrange
 	requestId := randString(10)
 	err := setFieldValue(req, "RequestId", requestId)
@@ -138,7 +137,7 @@ func handleUnaryRequest[Request any](context context.Context, mappingService *Ma
 	log.Printf("Received: request id: %s", requestId)
 
 	// Jaeger
-	_, span := jaeger.Tracer().Start(context, "handle_request")
+	ctx, span := jaeger.Tracer().Start(ctx, "handle_unary_request")
 	span.SetAttributes(attribute.String("worker_id", clientId))
 	span.SetAttributes(attribute.String("request_id", requestId))
 	span.AddEvent("init")
@@ -173,7 +172,7 @@ func handleUnaryRequest[Request any](context context.Context, mappingService *Ma
 		span.AddEvent("success")
 
 		return resFromWorkerObj, nil
-	case <-time.After(time.Duration(config.GetServerTimeout()) * time.Second):
+	case <-ctx.Done():
 		duration := time.Since(start)
 		prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 
@@ -185,7 +184,7 @@ func handleUnaryRequest[Request any](context context.Context, mappingService *Ma
 
 func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (*Reply, error) {
 	// Jaeger
-	ctx, span := jaeger.Tracer().Start(ctx, "forward_request_handler")
+	ctx, span := jaeger.Tracer().Start(ctx, "forward_unary_request_handler")
 	span.SetAttributes(attribute.String("worker_id", clientId))
 	span.AddEvent("init")
 	defer span.End()

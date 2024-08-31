@@ -1,10 +1,11 @@
 package task_forward
 
 import (
-	"errors"
 	"fmt"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
+	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/helper"
+	"log"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
 )
@@ -26,24 +27,25 @@ func (s *Service) InitTaskMessage(workerId string, taskNumber int) {
 	}
 }
 
-func (s *Service) Foo(req *taskForwardProto.FooRequest) (*taskForwardProto.FooResponse, error) {
+func (s *Service) Foo(req *taskForwardProto.FooRequest, resChan *chan *taskForwardProto.FooResponse) {
+	// Defer func to prevent sent to close channel
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("recover from resChan")
+		}
+	}()
+
+	// Act
 	taskMessage, ok := s.taskMessages.Get(req.GetTaskId())
 	if !ok {
-		protoError := &taskForwardProto.ErrorDetails{
-			Code:    0,
-			Message: "task not found",
-		}
-
-		return &taskForwardProto.FooResponse{
-			Error:     protoError,
-			RequestId: req.GetRequestId(),
-		}, errors.New("task not found")
+		*resChan <- grpc_streaming.CreateErrorResponse[taskForwardProto.FooResponse](req.RequestId, 0, "task not found")
 	}
 
-	return &taskForwardProto.FooResponse{
+	// Return
+	*resChan <- &taskForwardProto.FooResponse{
 		Error:       nil,
 		RequestId:   req.GetRequestId(),
 		TaskId:      req.GetTaskId(),
 		TaskMessage: taskMessage,
-	}, nil
+	}
 }

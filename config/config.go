@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"time"
 )
 
 func GetPushGatewayUrl() string {
@@ -75,14 +76,24 @@ func GetWorkerIdleTime() int {
 	return wit
 }
 
-func GetServerTimeout() int {
+func GetServerTimeout() time.Duration {
 	stStr := os.Getenv("SERVER_TIMEOUT")
 	st, err := strconv.Atoi(stStr)
 	if err != nil {
 		return 60
 	}
 
-	return st
+	return time.Duration(st)
+}
+
+func GetClientTimeout() time.Duration {
+	ctStr := os.Getenv("CLIENT_TIMEOUT")
+	ct, err := strconv.Atoi(ctStr)
+	if err != nil {
+		return 60
+	}
+
+	return time.Duration(ct)
 }
 
 func GetJaegerEndpoint() string {

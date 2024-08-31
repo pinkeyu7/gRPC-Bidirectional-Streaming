@@ -1,14 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
-	"grpc-bidirectional-streaming/runner/worker/internal/task_forward"
-
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/prometheus"
+	"grpc-bidirectional-streaming/runner/worker/internal/task_forward"
 	"log"
 	"net"
 	"os/signal"
@@ -18,8 +18,6 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"context"
 )
 
 var workerId string
@@ -60,7 +58,7 @@ func main() {
 
 	// Act
 	grpc_streaming.SetClientId(workerId)
-	grpc_streaming.NewUnaryClient(ctx, tfc.Foo, tfs.Foo)
+	grpc_streaming.NewUnaryClient(ctx, tfc.Foo, tfs.Foo, config.GetClientTimeout())
 
 	// Graceful shutdown
 	<-ctx.Done()

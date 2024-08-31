@@ -5,6 +5,7 @@ import (
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -22,27 +23,35 @@ type unaryClientObject[Request any, Response any] interface {
 }
 
 type unaryClient[Request any, Response any, Client unaryClientObject[Request, Response]] struct {
-	handler   func(req *Request) (*Response, error)
+	timeout   time.Duration
+	handler   func(req *Request, resChan *chan *Response)
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
 }
 
-func NewUnaryClient[Request any, Response any, Client unaryClientObject[Request, Response]](context context.Context, getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error), handleRequest func(req *Request) (*Response, error)) {
+func NewUnaryClient[Request any, Response any, Client unaryClientObject[Request, Response]](
+	ctx context.Context,
+	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error),
+	handleRequest func(req *Request, resChan *chan *Response),
+	timeout time.Duration,
+) {
+
 	c := &unaryClient[Request, Response, Client]{
+		timeout:   timeout,
 		handler:   handleRequest,
 		getStream: getStream,
 	}
 
-	go c.handleUnary(context)
+	go c.handleUnary(ctx)
 }
 
-func (c *unaryClient[Request, Response, Client]) handleUnary(context context.Context) {
+func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context) {
 	// Arrange
 	responseChan := make(chan *Response)
 	defer close(responseChan)
 
 	// Create metadata and context
 	md := metadata.Pairs("client_id", clientId)
-	ctx := metadata.NewOutgoingContext(context, md)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// Make RPC using the context with the metadata
 	stream, err := c.getStream(ctx)
@@ -75,18 +84,50 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(context context.Con
 		prometheus.RequestNum.Inc()
 
 		go func(req *Request) {
+			// Defer func to prevent sent to close channel
 			defer func() {
 				if r := recover(); r != nil {
 					log.Println("recover from client closed the stream")
 				}
 			}()
 
-			res, err := c.handler(req)
-			if err != nil {
-				log.Printf("failed to handle request: %s", err.Error())
-			}
+			// Arrange sub context for time out handling
+			subCtx, cancel := context.WithTimeout(context.Background(), c.timeout*time.Second)
+			defer cancel()
 
-			responseChan <- res
+			// Act
+			resultChan := make(chan *Response, 1)
+			defer close(resultChan)
+
+			go c.handler(req, &resultChan)
+
+			// Handle result
+			select {
+			case res := <-resultChan:
+				responseChan <- res
+			case <-subCtx.Done():
+				requestId, err := getFieldValue(req, "RequestId")
+				if err != nil {
+					log.Printf("failed to get request id: %s", err.Error())
+					return
+				}
+				responseChan <- CreateErrorResponse[Response](requestId, 0, subCtx.Err().Error())
+			}
 		}(req)
 	}
+}
+
+func CreateErrorResponse[Response any](requestId string, errCode uint32, errMessage string) *Response {
+	errRes := ErrorResponse{
+		Error: &Error{
+			Code:    errCode,
+			Message: errMessage,
+		},
+		RequestId: requestId,
+	}
+
+	var res Response
+	_ = convert(&errRes, &res)
+
+	return &res
 }
