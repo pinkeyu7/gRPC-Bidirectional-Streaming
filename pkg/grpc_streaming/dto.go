@@ -1,11 +1,11 @@
 package grpc_streaming
 
-type Error struct {
+type errorInfo struct {
 	Code    uint32 `json:"code"`
 	Message string `json:"message"`
 }
 
-type ErrorResponse struct {
-	Error     *Error `json:"error"`
-	RequestId string `json:"request_id"`
+type errorResponse struct {
+	Error     *errorInfo `json:"error"`
+	RequestId string     `json:"request_id"`
 }

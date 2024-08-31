@@ -49,7 +49,7 @@ func getParentFunctionName(skip int) string {
 	return names[len(names)-1]
 }
 
-func getError[T any](value T) (*Error, error) {
+func getError[T any](value T) (*errorInfo, error) {
 	val := reflect.ValueOf(value)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -74,7 +74,7 @@ func getError[T any](value T) (*Error, error) {
 	}
 
 	// Convert to error
-	errorFromValue := &Error{}
+	errorFromValue := &errorInfo{}
 	err = json.Unmarshal(errorString, errorFromValue)
 	if err != nil {
 		return nil, err
@@ -141,8 +141,8 @@ func convert[Source any, Target any](s *Source, t *Target) error {
 }
 
 func CreateErrorResponse[Response any](requestId string, errCode uint32, errMessage string) *Response {
-	errRes := ErrorResponse{
-		Error: &Error{
+	errRes := errorResponse{
+		Error: &errorInfo{
 			Code:    errCode,
 			Message: errMessage,
 		},
