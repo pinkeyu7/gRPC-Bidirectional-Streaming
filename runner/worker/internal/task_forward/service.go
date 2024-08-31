@@ -40,7 +40,7 @@ func (s *Service) Foo(ctx context.Context, req *taskForwardProto.FooRequest, res
 	// Act
 	taskMessage, ok := s.taskMessages.Get(req.GetTaskId())
 	if !ok {
-		*resChan <- grpc_streaming.CreateErrorResponse[taskForwardProto.FooResponse](req.RequestId, 0, "task not found")
+		*resChan <- grpc_streaming.NewErrorResponse[taskForwardProto.FooResponse](req.RequestId, grpc_streaming.ErrorCodeNotFound, "task not found")
 	}
 
 	// Return
@@ -60,30 +60,14 @@ func (s *Service) UpnpSearch(ctx context.Context, req *taskForwardProto.UpnpSear
 		}
 	}()
 
-	// Mock upnp search result
+	// Arrange
 	resultChan := make(chan *taskForwardProto.UpnpSearchResponse)
 	defer close(resultChan)
 
+	// Mock upnp search result
 	go func() {
-		for result := range resultChan {
-			select {
-			case <-ctx.Done():
-				log.Println("UpnpSearch - context done")
-				return
-			default:
-				*resChan <- result
-			}
-		}
-	}()
-
-	for i := 0; i < 30; i++ {
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("error: %v", r)
-				}
-			}()
-
+		for i := 0; i < 30; i++ {
+			// Arrange
 			res := &taskForwardProto.UpnpSearchResponse{
 				Error:     nil,
 				RequestId: req.GetRequestId(),
@@ -91,8 +75,26 @@ func (s *Service) UpnpSearch(ctx context.Context, req *taskForwardProto.UpnpSear
 				Ip:        fmt.Sprintf("192.168.1.%d", i),
 			}
 
-			resultChan <- res
-		}()
-		time.Sleep(1 * time.Second)
+			// Send response
+			select {
+			case <-ctx.Done():
+				log.Println("context done - UpnpSearch - mock")
+				return
+			default:
+				resultChan <- res
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	// Send response to resChan
+	for result := range resultChan {
+		select {
+		case <-ctx.Done():
+			log.Println("context done - UpnpSearch")
+			return
+		default:
+			*resChan <- result
+		}
 	}
 }

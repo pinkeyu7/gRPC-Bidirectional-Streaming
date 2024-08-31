@@ -84,10 +84,11 @@ func (c *clientStreamClient[Request, Response, Client]) handleClientStream(ctx c
 			subCtx, cancel := context.WithTimeout(context.Background(), c.timeout*time.Second)
 			defer cancel()
 
-			// Act
+			// Arrange channel
 			resultChan := make(chan *Response, 1)
 			defer close(resultChan)
 
+			// Act
 			go c.handler(subCtx, req, &resultChan)
 
 			// Handle result
@@ -101,7 +102,7 @@ func (c *clientStreamClient[Request, Response, Client]) handleClientStream(ctx c
 						log.Printf("failed to get request id: %s", err.Error())
 						return
 					}
-					responseChan <- CreateErrorResponse[Response](requestId, 0, "client - request timeout")
+					responseChan <- NewErrorResponse[Response](requestId, ErrorCodeClientTimeout, "client - request timeout")
 					return
 				}
 			}
