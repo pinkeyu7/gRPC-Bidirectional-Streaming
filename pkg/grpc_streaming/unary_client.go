@@ -11,28 +11,23 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type unaryClientObject[Request any, Response any] interface {
-	Send(*Response) error
-	Recv() (*Request, error)
-}
-
-type unaryClient[Request any, Response any, Client unaryClientObject[Request, Response]] struct {
+type unaryClient[Request any, Response any, Client clientObject[Request, Response]] struct {
 	timeout   time.Duration
-	handler   func(req *Request, resChan *chan *Response)
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
+	handler   func(ctx context.Context, req *Request, resChan *chan *Response)
 }
 
-func NewUnaryClient[Request any, Response any, Client unaryClientObject[Request, Response]](
+func NewUnaryClient[Request any, Response any, Client clientObject[Request, Response]](
 	ctx context.Context,
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error),
-	handleRequest func(req *Request, resChan *chan *Response),
+	handler func(ctx context.Context, req *Request, resChan *chan *Response),
 	timeout time.Duration,
 ) {
 
 	c := &unaryClient[Request, Response, Client]{
 		timeout:   timeout,
-		handler:   handleRequest,
 		getStream: getStream,
+		handler:   handler,
 	}
 
 	go c.handleUnary(ctx)
@@ -93,7 +88,7 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 			resultChan := make(chan *Response, 1)
 			defer close(resultChan)
 
-			go c.handler(req, &resultChan)
+			go c.handler(subCtx, req, &resultChan)
 
 			// Handle result
 			select {

@@ -1,6 +1,7 @@
 package task_forward
 
 import (
+	"context"
 	"fmt"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
 	"grpc-bidirectional-streaming/pkg/grpc_streaming"
@@ -27,7 +28,7 @@ func (s *Service) InitTaskMessage(workerId string, taskNumber int) {
 	}
 }
 
-func (s *Service) Foo(req *taskForwardProto.FooRequest, resChan *chan *taskForwardProto.FooResponse) {
+func (s *Service) Foo(ctx context.Context, req *taskForwardProto.FooRequest, resChan *chan *taskForwardProto.FooResponse) {
 	// Defer func to prevent sent to close channel
 	defer func() {
 		if r := recover(); r != nil {
