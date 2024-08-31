@@ -21,7 +21,7 @@ func NewServer(ms *grpc_streaming.MappingService) *Server {
 
 func (s *Server) Foo(stream taskForwardProto.TaskForward_FooServer) error {
 	// Arrange
-	err := grpc_streaming.NewUnaryServer(s.mappingService, stream)
+	err := grpc_streaming.NewServer(s.mappingService, stream)
 	if err != nil {
 		return status.Errorf(codes.Internal, "streaming failed: %s", err.Error())
 	}
