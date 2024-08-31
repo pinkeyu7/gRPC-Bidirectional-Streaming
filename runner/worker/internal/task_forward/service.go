@@ -52,7 +52,7 @@ func (s *Service) Unary(ctx context.Context, req *taskForwardProto.UnaryRequest,
 	}
 }
 
-func (s *Service) UpnpSearch(ctx context.Context, req *taskForwardProto.UpnpSearchRequest, resChan *chan *taskForwardProto.UpnpSearchResponse) {
+func (s *Service) ClientStream(ctx context.Context, req *taskForwardProto.ClientStreamRequest, resChan *chan *taskForwardProto.ClientStreamResponse) {
 	// Defer func to prevent sent to close channel
 	defer func() {
 		if r := recover(); r != nil {
@@ -61,14 +61,14 @@ func (s *Service) UpnpSearch(ctx context.Context, req *taskForwardProto.UpnpSear
 	}()
 
 	// Arrange
-	resultChan := make(chan *taskForwardProto.UpnpSearchResponse)
+	resultChan := make(chan *taskForwardProto.ClientStreamResponse)
 	defer close(resultChan)
 
 	// Mock upnp search result
 	go func() {
 		for i := 0; i < 30; i++ {
 			// Arrange
-			res := &taskForwardProto.UpnpSearchResponse{
+			res := &taskForwardProto.ClientStreamResponse{
 				Error:     nil,
 				RequestId: req.GetRequestId(),
 				Model:     fmt.Sprintf("upnp_search_%d", i),
@@ -78,7 +78,7 @@ func (s *Service) UpnpSearch(ctx context.Context, req *taskForwardProto.UpnpSear
 			// Send response
 			select {
 			case <-ctx.Done():
-				log.Println("context done - UpnpSearch - mock")
+				log.Println("context done - ClientStream - mock")
 				return
 			default:
 				resultChan <- res
@@ -91,7 +91,7 @@ func (s *Service) UpnpSearch(ctx context.Context, req *taskForwardProto.UpnpSear
 	for result := range resultChan {
 		select {
 		case <-ctx.Done():
-			log.Println("context done - UpnpSearch")
+			log.Println("context done - ClientStream")
 			return
 		default:
 			*resChan <- result

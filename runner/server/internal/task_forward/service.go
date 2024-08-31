@@ -41,17 +41,17 @@ func (s *Service) Unary(ctx context.Context, req *dto.UnaryRequest) (*dto.UnaryR
 	return res, nil
 }
 
-func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, resChan *chan *dto.UpnpSearchResponse, errChan *chan error) {
+func (s *Service) ClientStream(ctx context.Context, req *dto.ClientStreamRequest, resChan *chan *dto.ClientStreamResponse, errChan *chan error) {
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "request forward")
 	span.AddEvent("init")
 	defer span.End()
 
 	grpc_streaming.ForwardClientStreamRequestHandler[
-		dto.UpnpSearchRequest,
-		dto.UpnpSearchResponse,
-		taskForwardProto.UpnpSearchRequest,
-		taskForwardProto.UpnpSearchResponse,
+		dto.ClientStreamRequest,
+		dto.ClientStreamResponse,
+		taskForwardProto.ClientStreamRequest,
+		taskForwardProto.ClientStreamResponse,
 	](ctx, s.mappingService, req.WorkerId, req, resChan, errChan)
 
 	log.Printf("context done - service")

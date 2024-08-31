@@ -49,7 +49,7 @@ func (s *Server) Unary(ctx context.Context, req *taskProto.UnaryRequest) (*taskP
 	}, nil
 }
 
-func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream taskProto.Task_UpnpSearchExampleServer) error {
+func (s *Server) ClientStream(req *taskProto.ClientStreamRequest, stream taskProto.Task_ClientStreamServer) error {
 	// Arrange context
 	ctx, cancel := context.WithTimeout(stream.Context(), config.GetServerTimeout()*time.Second)
 	defer cancel()
@@ -60,12 +60,12 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 	defer span.End()
 
 	// Init req
-	reqTo := &dto.UpnpSearchRequest{
+	reqTo := &dto.ClientStreamRequest{
 		WorkerId: req.GetWorkerId(),
 	}
 
 	// Init response chan
-	responseChan := make(chan *dto.UpnpSearchResponse)
+	responseChan := make(chan *dto.ClientStreamResponse)
 	defer close(responseChan)
 
 	errChan := make(chan error)
@@ -80,7 +80,7 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 					return
 				}
 
-				var res taskProto.UpnpSearchResponse
+				var res taskProto.ClientStreamResponse
 				err := helper.Convert(response, &res)
 				if err != nil {
 					log.Printf("convert response error: %s", err.Error())
@@ -102,7 +102,7 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 	}()
 
 	// Act
-	go s.taskForwardService.UpnpSearch(ctx, reqTo, &responseChan, &errChan)
+	go s.taskForwardService.ClientStream(ctx, reqTo, &responseChan, &errChan)
 
 	// Wait for response
 	select {

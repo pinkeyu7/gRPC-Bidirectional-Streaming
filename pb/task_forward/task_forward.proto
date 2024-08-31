@@ -6,7 +6,7 @@ package task_forward;
 
 service TaskForward {
   rpc Unary (stream UnaryResponse) returns (stream UnaryRequest) {}
-  rpc UpnpSearch (stream UpnpSearchResponse) returns (stream UpnpSearchRequest) {}
+  rpc ClientStream (stream ClientStreamResponse) returns (stream ClientStreamRequest) {}
 }
 
 message UnaryRequest {
@@ -21,11 +21,11 @@ message UnaryResponse {
   string task_message = 4;
 }
 
-message UpnpSearchRequest {
+message ClientStreamRequest {
   string request_id = 1;
 }
 
-message UpnpSearchResponse {
+message ClientStreamResponse {
   ErrorDetails error = 1;
   string request_id = 2;
   string model = 3;

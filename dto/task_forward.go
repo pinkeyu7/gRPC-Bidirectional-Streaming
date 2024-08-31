@@ -11,11 +11,11 @@ type UnaryResponse struct {
 	TaskMessage string `json:"task_message"`
 }
 
-type UpnpSearchRequest struct {
+type ClientStreamRequest struct {
 	WorkerId string `json:"worker_id"`
 }
 
-type UpnpSearchResponse struct {
+type ClientStreamResponse struct {
 	WorkerId string `json:"worker_id"`
 	Model    string `json:"model"`
 	Ip       string `json:"ip"`

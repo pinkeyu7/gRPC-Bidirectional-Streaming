@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskClient interface {
 	Unary(ctx context.Context, in *UnaryRequest, opts ...grpc.CallOption) (*UnaryResponse, error)
-	UpnpSearchExample(ctx context.Context, in *UpnpSearchRequest, opts ...grpc.CallOption) (Task_UpnpSearchExampleClient, error)
+	ClientStream(ctx context.Context, in *ClientStreamRequest, opts ...grpc.CallOption) (Task_ClientStreamClient, error)
 }
 
 type taskClient struct {
@@ -43,12 +43,12 @@ func (c *taskClient) Unary(ctx context.Context, in *UnaryRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *taskClient) UpnpSearchExample(ctx context.Context, in *UpnpSearchRequest, opts ...grpc.CallOption) (Task_UpnpSearchExampleClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Task_ServiceDesc.Streams[0], "/task.Task/UpnpSearchExample", opts...)
+func (c *taskClient) ClientStream(ctx context.Context, in *ClientStreamRequest, opts ...grpc.CallOption) (Task_ClientStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Task_ServiceDesc.Streams[0], "/task.Task/ClientStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &taskUpnpSearchExampleClient{stream}
+	x := &taskClientStreamClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -58,17 +58,17 @@ func (c *taskClient) UpnpSearchExample(ctx context.Context, in *UpnpSearchReques
 	return x, nil
 }
 
-type Task_UpnpSearchExampleClient interface {
-	Recv() (*UpnpSearchResponse, error)
+type Task_ClientStreamClient interface {
+	Recv() (*ClientStreamResponse, error)
 	grpc.ClientStream
 }
 
-type taskUpnpSearchExampleClient struct {
+type taskClientStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *taskUpnpSearchExampleClient) Recv() (*UpnpSearchResponse, error) {
-	m := new(UpnpSearchResponse)
+func (x *taskClientStreamClient) Recv() (*ClientStreamResponse, error) {
+	m := new(ClientStreamResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (x *taskUpnpSearchExampleClient) Recv() (*UpnpSearchResponse, error) {
 // for forward compatibility
 type TaskServer interface {
 	Unary(context.Context, *UnaryRequest) (*UnaryResponse, error)
-	UpnpSearchExample(*UpnpSearchRequest, Task_UpnpSearchExampleServer) error
+	ClientStream(*ClientStreamRequest, Task_ClientStreamServer) error
 	mustEmbedUnimplementedTaskServer()
 }
 
@@ -91,8 +91,8 @@ type UnimplementedTaskServer struct {
 func (UnimplementedTaskServer) Unary(context.Context, *UnaryRequest) (*UnaryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unary not implemented")
 }
-func (UnimplementedTaskServer) UpnpSearchExample(*UpnpSearchRequest, Task_UpnpSearchExampleServer) error {
-	return status.Errorf(codes.Unimplemented, "method UpnpSearchExample not implemented")
+func (UnimplementedTaskServer) ClientStream(*ClientStreamRequest, Task_ClientStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method ClientStream not implemented")
 }
 func (UnimplementedTaskServer) mustEmbedUnimplementedTaskServer() {}
 
@@ -125,24 +125,24 @@ func _Task_Unary_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Task_UpnpSearchExample_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(UpnpSearchRequest)
+func _Task_ClientStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ClientStreamRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(TaskServer).UpnpSearchExample(m, &taskUpnpSearchExampleServer{stream})
+	return srv.(TaskServer).ClientStream(m, &taskClientStreamServer{stream})
 }
 
-type Task_UpnpSearchExampleServer interface {
-	Send(*UpnpSearchResponse) error
+type Task_ClientStreamServer interface {
+	Send(*ClientStreamResponse) error
 	grpc.ServerStream
 }
 
-type taskUpnpSearchExampleServer struct {
+type taskClientStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *taskUpnpSearchExampleServer) Send(m *UpnpSearchResponse) error {
+func (x *taskClientStreamServer) Send(m *ClientStreamResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -160,8 +160,8 @@ var Task_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "UpnpSearchExample",
-			Handler:       _Task_UpnpSearchExample_Handler,
+			StreamName:    "ClientStream",
+			Handler:       _Task_ClientStream_Handler,
 			ServerStreams: true,
 		},
 	},

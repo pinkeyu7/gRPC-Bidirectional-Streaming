@@ -59,7 +59,7 @@ func main() {
 	// Act
 	grpc_streaming.SetClientId(workerId)
 	grpc_streaming.NewUnaryClient(ctx, tfc.Unary, tfs.Unary, config.GetClientTimeout())
-	grpc_streaming.NewClientStreamClient(ctx, tfc.UpnpSearch, tfs.UpnpSearch, config.GetClientTimeout())
+	grpc_streaming.NewClientStreamClient(ctx, tfc.ClientStream, tfs.ClientStream, config.GetClientTimeout())
 
 	// Graceful shutdown
 	<-ctx.Done()

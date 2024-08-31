@@ -29,7 +29,7 @@ func (s *Server) Unary(stream taskForwardProto.TaskForward_UnaryServer) error {
 	return nil
 }
 
-func (s *Server) UpnpSearch(stream taskForwardProto.TaskForward_UpnpSearchServer) error {
+func (s *Server) ClientStream(stream taskForwardProto.TaskForward_ClientStreamServer) error {
 	// Arrange
 	err := grpc_streaming.NewServer(s.mappingService, stream)
 	if err != nil {

@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TaskForwardClient interface {
 	Unary(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UnaryClient, error)
-	UpnpSearch(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UpnpSearchClient, error)
+	ClientStream(ctx context.Context, opts ...grpc.CallOption) (TaskForward_ClientStreamClient, error)
 }
 
 type taskForwardClient struct {
@@ -65,31 +65,31 @@ func (x *taskForwardUnaryClient) Recv() (*UnaryRequest, error) {
 	return m, nil
 }
 
-func (c *taskForwardClient) UpnpSearch(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UpnpSearchClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[1], "/task_forward.TaskForward/UpnpSearch", opts...)
+func (c *taskForwardClient) ClientStream(ctx context.Context, opts ...grpc.CallOption) (TaskForward_ClientStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[1], "/task_forward.TaskForward/ClientStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &taskForwardUpnpSearchClient{stream}
+	x := &taskForwardClientStreamClient{stream}
 	return x, nil
 }
 
-type TaskForward_UpnpSearchClient interface {
-	Send(*UpnpSearchResponse) error
-	Recv() (*UpnpSearchRequest, error)
+type TaskForward_ClientStreamClient interface {
+	Send(*ClientStreamResponse) error
+	Recv() (*ClientStreamRequest, error)
 	grpc.ClientStream
 }
 
-type taskForwardUpnpSearchClient struct {
+type taskForwardClientStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *taskForwardUpnpSearchClient) Send(m *UpnpSearchResponse) error {
+func (x *taskForwardClientStreamClient) Send(m *ClientStreamResponse) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *taskForwardUpnpSearchClient) Recv() (*UpnpSearchRequest, error) {
-	m := new(UpnpSearchRequest)
+func (x *taskForwardClientStreamClient) Recv() (*ClientStreamRequest, error) {
+	m := new(ClientStreamRequest)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (x *taskForwardUpnpSearchClient) Recv() (*UpnpSearchRequest, error) {
 // for forward compatibility
 type TaskForwardServer interface {
 	Unary(TaskForward_UnaryServer) error
-	UpnpSearch(TaskForward_UpnpSearchServer) error
+	ClientStream(TaskForward_ClientStreamServer) error
 	mustEmbedUnimplementedTaskForwardServer()
 }
 
@@ -112,8 +112,8 @@ type UnimplementedTaskForwardServer struct {
 func (UnimplementedTaskForwardServer) Unary(TaskForward_UnaryServer) error {
 	return status.Errorf(codes.Unimplemented, "method Unary not implemented")
 }
-func (UnimplementedTaskForwardServer) UpnpSearch(TaskForward_UpnpSearchServer) error {
-	return status.Errorf(codes.Unimplemented, "method UpnpSearch not implemented")
+func (UnimplementedTaskForwardServer) ClientStream(TaskForward_ClientStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method ClientStream not implemented")
 }
 func (UnimplementedTaskForwardServer) mustEmbedUnimplementedTaskForwardServer() {}
 
@@ -154,26 +154,26 @@ func (x *taskForwardUnaryServer) Recv() (*UnaryResponse, error) {
 	return m, nil
 }
 
-func _TaskForward_UpnpSearch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TaskForwardServer).UpnpSearch(&taskForwardUpnpSearchServer{stream})
+func _TaskForward_ClientStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TaskForwardServer).ClientStream(&taskForwardClientStreamServer{stream})
 }
 
-type TaskForward_UpnpSearchServer interface {
-	Send(*UpnpSearchRequest) error
-	Recv() (*UpnpSearchResponse, error)
+type TaskForward_ClientStreamServer interface {
+	Send(*ClientStreamRequest) error
+	Recv() (*ClientStreamResponse, error)
 	grpc.ServerStream
 }
 
-type taskForwardUpnpSearchServer struct {
+type taskForwardClientStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *taskForwardUpnpSearchServer) Send(m *UpnpSearchRequest) error {
+func (x *taskForwardClientStreamServer) Send(m *ClientStreamRequest) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *taskForwardUpnpSearchServer) Recv() (*UpnpSearchResponse, error) {
-	m := new(UpnpSearchResponse)
+func (x *taskForwardClientStreamServer) Recv() (*ClientStreamResponse, error) {
+	m := new(ClientStreamResponse)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -195,8 +195,8 @@ var TaskForward_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "UpnpSearch",
-			Handler:       _TaskForward_UpnpSearch_Handler,
+			StreamName:    "ClientStream",
+			Handler:       _TaskForward_ClientStream_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

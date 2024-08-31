@@ -6,7 +6,7 @@ package task;
 
 service Task {
   rpc Unary (UnaryRequest) returns (UnaryResponse) {}
-  rpc UpnpSearchExample(UpnpSearchRequest) returns (stream UpnpSearchResponse);
+  rpc ClientStream(ClientStreamRequest) returns (stream ClientStreamResponse);
 }
 
 message UnaryRequest {
@@ -20,11 +20,11 @@ message UnaryResponse {
   string task_message = 3;
 }
 
-message UpnpSearchRequest {
+message ClientStreamRequest {
   string worker_id = 1;
 }
 
-message UpnpSearchResponse {
+message ClientStreamResponse {
   string worker_id = 1;
   string model = 2;
   string ip = 3;
