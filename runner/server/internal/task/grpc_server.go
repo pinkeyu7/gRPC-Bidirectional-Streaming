@@ -71,9 +71,8 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 	errChan := make(chan error)
 	defer close(errChan)
 
-	// Act
+	// Handle response
 	go func() {
-		// Handle response
 		for {
 			select {
 			case response, ok := <-responseChan:
@@ -106,6 +105,7 @@ func (s *Server) UpnpSearchExample(req *taskProto.UpnpSearchRequest, stream task
 
 	select {
 	case err := <-errChan:
+		log.Printf("receive response error: %s", err.Error())
 		span.AddEvent("error")
 		return err
 	case <-ctx.Done():

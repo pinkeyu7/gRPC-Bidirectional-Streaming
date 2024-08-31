@@ -47,28 +47,12 @@ func (s *Service) UpnpSearch(ctx context.Context, req *dto.UpnpSearchRequest, re
 	span.AddEvent("init")
 	defer span.End()
 
-	// Arrange
-	resultChan := make(chan *dto.UpnpSearchResponse)
-	defer close(resultChan)
-
-	go func() {
-		for result := range resultChan {
-			select {
-			case <-ctx.Done():
-				log.Println("context done - service")
-				return
-			default:
-				*responseChan <- result
-			}
-		}
-	}()
-
 	grpc_streaming.ForwardClientStreamRequestHandler[
 		dto.UpnpSearchRequest,
 		dto.UpnpSearchResponse,
 		taskForwardProto.UpnpSearchRequest,
 		taskForwardProto.UpnpSearchResponse,
-	](ctx, s.mappingService, req.WorkerId, req, &resultChan, errChan)
+	](ctx, s.mappingService, req.WorkerId, req, responseChan, errChan)
 
 	log.Printf("context done - service")
 	span.AddEvent("context done - service")
