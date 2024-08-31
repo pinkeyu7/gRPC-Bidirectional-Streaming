@@ -139,3 +139,18 @@ func convert[Source any, Target any](s *Source, t *Target) error {
 
 	return nil
 }
+
+func CreateErrorResponse[Response any](requestId string, errCode uint32, errMessage string) *Response {
+	errRes := ErrorResponse{
+		Error: &Error{
+			Code:    errCode,
+			Message: errMessage,
+		},
+		RequestId: requestId,
+	}
+
+	var res Response
+	_ = convert(&errRes, &res)
+
+	return &res
+}

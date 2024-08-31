@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-
 	"google.golang.org/grpc/metadata"
 )
 

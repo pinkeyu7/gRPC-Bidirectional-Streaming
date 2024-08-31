@@ -116,18 +116,3 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 		}(req)
 	}
 }
-
-func CreateErrorResponse[Response any](requestId string, errCode uint32, errMessage string) *Response {
-	errRes := ErrorResponse{
-		Error: &Error{
-			Code:    errCode,
-			Message: errMessage,
-		},
-		RequestId: requestId,
-	}
-
-	var res Response
-	_ = convert(&errRes, &res)
-
-	return &res
-}
