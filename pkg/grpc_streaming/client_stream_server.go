@@ -12,13 +12,6 @@ import (
 )
 
 func handleClientStreamRequest[Request any](ctx context.Context, mappingService *MappingService, funcName string, clientId string, req *Request, resChan *chan any, errChan *chan error) {
-	// Defer func to prevent sent to close channel
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println("recover from handleClientStreamRequest")
-		}
-	}()
-
 	// Arrange
 	requestId := randString(10)
 	err := setFieldValue(req, "RequestId", requestId)
@@ -76,23 +69,14 @@ func handleClientStreamRequest[Request any](ctx context.Context, mappingService 
 			duration := time.Since(start)
 			prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 
-			span.AddEvent("timeout")
-
-			log.Println("context done - server - request timeout")
-			*errChan <- fmt.Errorf("server - request timeout")
+			log.Println("context done - handleClientStreamRequest")
+			span.AddEvent("context done")
 			return
 		}
 	}
 }
 
 func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request, resChan *chan *Reply, errChan *chan error) {
-	// Defer func to prevent sent to close channel
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println("recover from ForwardClientStreamRequestHandler")
-		}
-	}()
-
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "forward_client_stream_request_handler")
 	span.SetAttributes(attribute.String("worker_id", clientId))
@@ -157,7 +141,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			*resChan <- &resTo
 		case <-ctx.Done():
 			log.Println("context done - ForwardClientStreamRequestHandler")
-			span.AddEvent("context done - ForwardClientStreamRequestHandler")
+			span.AddEvent("context done")
 			return
 		}
 	}
