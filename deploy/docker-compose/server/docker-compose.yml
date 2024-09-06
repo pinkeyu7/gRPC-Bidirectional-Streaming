@@ -1,33 +1,30 @@
 version: "3"
-
 x-common-variables: &common-variables
-  PUSH_GATEWAY_URL: http://pushgateway.prometheus-docker.orb.local:9091
-  REQUEST_PER_SECOND: 10000
-  REQUEST_TIME_DURATION: 1800
-  TASK_PER_WORKER: 100
-  WORKER_COUNT: 100
-  WORKER_IDLE_TIME: 5
-  LISTEN_NETWORK: tcp
-  LISTEN_ADDRESS: server:50015
-  WORKER_TIMEOUT: 5
-  SERVER_TIMEOUT: 10
-
+    PUSH_GATEWAY_URL: http://pushgateway.prometheus-docker.orb.local:9091
+    REQUEST_PER_SECOND: 10000
+    REQUEST_TIME_DURATION: 1800
+    TASK_PER_WORKER: 100
+    WORKER_COUNT: 100
+    WORKER_IDLE_TIME: 5
+    LISTEN_NETWORK: tcp
+    LISTEN_ADDRESS: server:50015
+    WORKER_TIMEOUT: 5
+    SERVER_TIMEOUT: 10
 services:
-  server:
-    container_name: server
-    image: grpc-bidirectional-streaming-server:latest
-    networks:
-      general:
-    deploy:
-      resources:
-        limits:
-          cpus: "4"
-          memory: 5000M
-    ports:
-      - 50015:50015
-    environment:
-      <<: *common-variables
-
+    server:
+        container_name: server
+        image: grpc-bidirectional-streaming-server:latest
+        networks:
+            general:
+        deploy:
+            resources:
+                limits:
+                    cpus: "4"
+                    memory: 5000M
+        ports:
+            - 50015:50015
+        environment:
+            <<: *common-variables
 networks:
-  general:
-    external: true
+    general:
+        external: true
