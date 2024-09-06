@@ -5,11 +5,11 @@ import (
 	"grpc-bidirectional-streaming/config"
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
-	"grpc-bidirectional-streaming/pkg/grpc_streaming"
+	grpcStreaming "grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/server/internal/task"
-	"grpc-bidirectional-streaming/runner/server/internal/task_forward"
+	taskForward "grpc-bidirectional-streaming/runner/server/internal/task_forward"
 	"log"
 	"net"
 	"os"
@@ -17,11 +17,9 @@ import (
 	"syscall"
 	"time"
 
-	"google.golang.org/grpc"
-
 	_ "github.com/joho/godotenv/autoload"
-
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -58,22 +56,23 @@ func main() {
 	pusher.Start()
 
 	// Init
-	ms := grpc_streaming.NewMappingService()
-	tfs := task_forward.NewService(ms)
-	tfgs := task_forward.NewServer(ms)
+	ms := grpcStreaming.NewMappingService()
+	tfs := taskForward.NewService(ms)
+	tfgs := taskForward.NewServer(ms)
 	tgs := task.NewServer(tfs)
 
 	go func() {
 		for {
 			ms.Monitor()
-			time.Sleep(5 * time.Second)
+			time.Sleep(config.GetMonitorTimeInterval())
 		}
 	}()
 
 	// Listen
 	lis, err := net.Listen(config.GetListenNetwork(), config.GetListenAddress())
 	if err != nil {
-		log.Fatalf("failed to listen: %s", err.Error())
+		log.Printf("failed to listen: %s", err.Error())
+		panic(err)
 	}
 
 	// Start Server
@@ -82,6 +81,7 @@ func main() {
 	taskProto.RegisterTaskServer(s, tgs)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %s", err.Error())
+		log.Printf("failed to serve: %s", err.Error())
+		panic(err)
 	}
 }

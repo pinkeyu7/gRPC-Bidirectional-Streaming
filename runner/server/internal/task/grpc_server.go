@@ -7,17 +7,17 @@ import (
 	taskProto "grpc-bidirectional-streaming/pb/task"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
-	"grpc-bidirectional-streaming/runner/server/internal/task_forward"
+	taskForward "grpc-bidirectional-streaming/runner/server/internal/task_forward"
 	"log"
 	"time"
 )
 
 type Server struct {
 	taskProto.UnimplementedTaskServer
-	taskForwardService *task_forward.Service
+	taskForwardService *taskForward.Service
 }
 
-func NewServer(tfs *task_forward.Service) *Server {
+func NewServer(tfs *taskForward.Service) *Server {
 	return &Server{taskForwardService: tfs}
 }
 
@@ -31,8 +31,8 @@ func (s *Server) Unary(ctx context.Context, req *taskProto.UnaryRequest) (*taskP
 	defer span.End()
 
 	request := &dto.UnaryRequest{
-		WorkerId: req.GetWorkerId(),
-		TaskId:   req.TaskId,
+		WorkerID: req.GetWorkerId(),
+		TaskID:   req.TaskId,
 	}
 
 	response, err := s.taskForwardService.Unary(ctx, request)
@@ -43,8 +43,8 @@ func (s *Server) Unary(ctx context.Context, req *taskProto.UnaryRequest) (*taskP
 	span.AddEvent("done")
 
 	return &taskProto.UnaryResponse{
-		WorkerId:    response.WorkerId,
-		TaskId:      response.TaskId,
+		WorkerId:    response.WorkerID,
+		TaskId:      response.TaskID,
 		TaskMessage: response.TaskMessage,
 	}, nil
 }
@@ -61,7 +61,7 @@ func (s *Server) ClientStream(req *taskProto.ClientStreamRequest, stream taskPro
 
 	// Init req
 	reqTo := &dto.ClientStreamRequest{
-		WorkerId: req.GetWorkerId(),
+		WorkerID: req.GetWorkerId(),
 	}
 
 	// Init response chan
@@ -102,7 +102,7 @@ func (s *Server) ClientStream(req *taskProto.ClientStreamRequest, stream taskPro
 	}()
 
 	// Act
-	go s.taskForwardService.ClientStream(ctx, reqTo, &responseChan, &errChan)
+	go s.taskForwardService.ClientStream(ctx, reqTo, responseChan, errChan)
 
 	// Wait for response
 	select {

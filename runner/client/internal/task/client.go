@@ -10,9 +10,7 @@ import (
 	"log"
 
 	cmap "github.com/orcaman/concurrent-map/v2"
-
 	"go.opentelemetry.io/otel/attribute"
-
 	"google.golang.org/grpc"
 )
 
@@ -28,22 +26,22 @@ func NewClient(conn *grpc.ClientConn) *Client {
 	}
 }
 
-func (c *Client) InitTaskMessage(workerId string, taskNumber int) {
+func (c *Client) InitTaskMessage(workerID string, taskNumber int) {
 	for i := 0; i < taskNumber; i++ {
-		taskId := fmt.Sprintf("task_%s_%04d", workerId, i+1)
-		c.taskMessages.Set(taskId, helper.Sha1Str(taskId))
+		taskID := fmt.Sprintf("task_%s_%04d", workerID, i+1)
+		c.taskMessages.Set(taskID, helper.Sha1Str(taskID))
 	}
 }
 
-func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) error {
+func (c *Client) GetInfo(ctx context.Context, workerID string, taskID string) error {
 	// Arrange
 	req := &taskProto.UnaryRequest{
-		WorkerId: workerId,
-		TaskId:   taskId,
+		WorkerId: workerID,
+		TaskId:   taskID,
 	}
 
 	ctx, span := jaeger.Tracer().Start(ctx, "get task")
-	span.SetAttributes(attribute.String("task_id", taskId))
+	span.SetAttributes(attribute.String("task_id", taskID))
 	span.AddEvent("send request")
 	defer span.End()
 
@@ -56,7 +54,7 @@ func (c *Client) GetInfo(ctx context.Context, workerId string, taskId string) er
 	log.Printf("worker id: %s, task id: %s, task message: %s", res.GetWorkerId(), res.GetTaskId(), res.GetTaskMessage())
 
 	// Validation
-	taskMessage, ok := c.taskMessages.Get(taskId)
+	taskMessage, ok := c.taskMessages.Get(taskID)
 	if !ok {
 		return errors.New("task not found")
 	}

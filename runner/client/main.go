@@ -4,21 +4,19 @@ import (
 	"context"
 	"fmt"
 	"grpc-bidirectional-streaming/config"
+	"grpc-bidirectional-streaming/pkg/helper"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"grpc-bidirectional-streaming/runner/client/internal/task"
 	"log"
-	"math/rand/v2"
 	"net"
 	"sync"
 	"time"
 
+	_ "github.com/joho/godotenv/autoload"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
@@ -46,17 +44,19 @@ func main() {
 		grpc.WithContextDialer(func(
 			ctx context.Context, s string,
 		) (net.Conn, error) {
+
 			log.Printf("Dialing %s\n", config.GetListenAddress())
 			return net.Dial(config.GetListenNetwork(), config.GetListenAddress())
 		}))
 	if err != nil {
-		log.Fatalf("did not connect: %s", err.Error())
+		log.Printf("did not connect: %s", err.Error())
+		panic(err)
 	}
 	defer conn.Close()
 
 	// Init task service
 	taskClient := task.NewClient(conn)
-	taskClient.InitTaskMessage(config.GetWorkerId(), config.GetTaskPerWorker())
+	taskClient.InitTaskMessage(config.GetWorkerID(), config.GetTaskPerWorker())
 
 	successNum := 0
 	failNum := 0
@@ -71,13 +71,13 @@ func main() {
 
 			go func() {
 				start := time.Now()
-				workerId := fmt.Sprintf("worker_%03d", rand.IntN(config.GetWorkerCount())+1)
-				taskId := fmt.Sprintf("task_%s_%04d", workerId, rand.IntN(config.GetTaskPerWorker())+1)
+				workerID := fmt.Sprintf("worker_%03d", helper.RandomInt(0, config.GetWorkerCount())+1)
+				taskID := fmt.Sprintf("task_%s_%04d", workerID, helper.RandomInt(0, config.GetTaskPerWorker())+1)
 
-				err := taskClient.GetInfo(context.Background(), workerId, taskId)
+				err := taskClient.GetInfo(context.Background(), workerID, taskID)
 				duration := time.Since(start)
 				if err != nil {
-					log.Printf("worker id: %s, task id: %s, error: %s", workerId, taskId, err.Error())
+					log.Printf("worker id: %s, task id: %s, error: %s", workerID, taskID, err.Error())
 					failNum++
 					prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
 				} else {
@@ -95,8 +95,8 @@ func main() {
 	// Wait for tasks
 	wg.Wait()
 
-	*stopChan <- true
-	close(*stopChan)
+	stopChan <- true
+	close(stopChan)
 
 	log.Printf("done: success: %d, fail: %d", successNum, failNum)
 }

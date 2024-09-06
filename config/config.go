@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func GetPushGatewayUrl() string {
+func GetPushGatewayURL() string {
 	return os.Getenv("PUSH_GATEWAY_URL")
 }
 
@@ -62,7 +62,7 @@ func GetWorkerCount() int {
 	return wc
 }
 
-func GetWorkerId() string {
+func GetWorkerID() string {
 	return os.Getenv("WORKER_ID")
 }
 
@@ -77,23 +77,39 @@ func GetWorkerIdleTime() int {
 }
 
 func GetServerTimeout() time.Duration {
+	defaultTimeout := 60
+
 	stStr := os.Getenv("SERVER_TIMEOUT")
 	st, err := strconv.Atoi(stStr)
 	if err != nil {
-		return 60
+		return time.Duration(defaultTimeout) * time.Second
 	}
 
-	return time.Duration(st)
+	return time.Duration(st) * time.Second
 }
 
 func GetClientTimeout() time.Duration {
+	defaultTimeout := 60
+
 	ctStr := os.Getenv("CLIENT_TIMEOUT")
 	ct, err := strconv.Atoi(ctStr)
 	if err != nil {
-		return 60
+		return time.Duration(defaultTimeout) * time.Second
 	}
 
-	return time.Duration(ct)
+	return time.Duration(ct) * time.Second
+}
+
+func GetMonitorTimeInterval() time.Duration {
+	defaultTimeInterval := 5
+
+	ctStr := os.Getenv("MONITOR_TIME_INTERVAL")
+	ct, err := strconv.Atoi(ctStr)
+	if err != nil {
+		return time.Duration(defaultTimeInterval) * time.Second
+	}
+
+	return time.Duration(ct) * time.Second
 }
 
 func GetJaegerEndpoint() string {

@@ -1,10 +1,10 @@
-package task_forward
+package taskforward
 
 import (
 	"context"
 	"fmt"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
-	"grpc-bidirectional-streaming/pkg/grpc_streaming"
+	grpcStreaming "grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/helper"
 	"log"
 	"time"
@@ -22,14 +22,14 @@ func NewService() *Service {
 	}
 }
 
-func (s *Service) InitTaskMessage(workerId string, taskNumber int) {
+func (s *Service) InitTaskMessage(workerID string, taskNumber int) {
 	for i := 0; i < taskNumber; i++ {
-		taskId := fmt.Sprintf("task_%s_%04d", workerId, i+1)
-		s.taskMessages.Set(taskId, helper.Sha1Str(taskId))
+		taskID := fmt.Sprintf("task_%s_%04d", workerID, i+1)
+		s.taskMessages.Set(taskID, helper.Sha1Str(taskID))
 	}
 }
 
-func (s *Service) Unary(ctx context.Context, req *taskForwardProto.UnaryRequest, resChan *chan *taskForwardProto.UnaryResponse) {
+func (s *Service) Unary(ctx context.Context, req *taskForwardProto.UnaryRequest, resChan chan *taskForwardProto.UnaryResponse) {
 	// Defer func to prevent sent to close channel
 	defer func() {
 		if r := recover(); r != nil {
@@ -40,11 +40,12 @@ func (s *Service) Unary(ctx context.Context, req *taskForwardProto.UnaryRequest,
 	// Act
 	taskMessage, ok := s.taskMessages.Get(req.GetTaskId())
 	if !ok {
-		*resChan <- grpc_streaming.NewErrorResponse[taskForwardProto.UnaryResponse](req.RequestId, grpc_streaming.ErrorCodeNotFound, "task not found")
+		resChan <- grpcStreaming.NewErrorResponse[taskForwardProto.UnaryResponse](
+			req.RequestId, grpcStreaming.ErrorCodeNotFound, "task not found")
 	}
 
 	// Return
-	*resChan <- &taskForwardProto.UnaryResponse{
+	resChan <- &taskForwardProto.UnaryResponse{
 		Error:       nil,
 		RequestId:   req.GetRequestId(),
 		TaskId:      req.GetTaskId(),
@@ -52,7 +53,9 @@ func (s *Service) Unary(ctx context.Context, req *taskForwardProto.UnaryRequest,
 	}
 }
 
-func (s *Service) ClientStream(ctx context.Context, req *taskForwardProto.ClientStreamRequest, resChan *chan *taskForwardProto.ClientStreamResponse) {
+func (s *Service) ClientStream(ctx context.Context, req *taskForwardProto.ClientStreamRequest,
+	resChan chan *taskForwardProto.ClientStreamResponse) {
+
 	// Defer func to prevent sent to close channel
 	defer func() {
 		if r := recover(); r != nil {
@@ -94,7 +97,7 @@ func (s *Service) ClientStream(ctx context.Context, req *taskForwardProto.Client
 			log.Println("context done - ClientStream")
 			return
 		default:
-			*resChan <- result
+			resChan <- result
 		}
 	}
 }

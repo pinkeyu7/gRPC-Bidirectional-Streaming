@@ -6,32 +6,29 @@ import (
 	"fmt"
 	"grpc-bidirectional-streaming/config"
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
-	"grpc-bidirectional-streaming/pkg/grpc_streaming"
+	grpcStreaming "grpc-bidirectional-streaming/pkg/grpc_streaming"
 	"grpc-bidirectional-streaming/pkg/prometheus"
-	"grpc-bidirectional-streaming/runner/worker/internal/task_forward"
+	taskForward "grpc-bidirectional-streaming/runner/worker/internal/task_forward"
 	"log"
 	"net"
 	"os/signal"
 	"syscall"
-	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var workerId string
+var workerID string
 
 func main() {
-	time.Sleep(5 * time.Second)
-
-	flag.StringVar(&workerId, "workerId", config.GetWorkerId(), "worker id")
+	flag.StringVar(&workerID, "workerID", config.GetWorkerID(), "worker id")
 	flag.Parse()
 
-	log.SetPrefix(fmt.Sprintf("[Worker: %s]", workerId))
+	log.SetPrefix(fmt.Sprintf("[Worker: %s]", workerID))
 
 	// Pusher
-	pusher := prometheus.NewPusher(fmt.Sprintf("worker_%s", workerId))
+	pusher := prometheus.NewPusher(fmt.Sprintf("worker_%s", workerID))
 	pusher.Start()
 
 	// Generate connection
@@ -39,6 +36,7 @@ func main() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(
 			ctx context.Context, s string,
 		) (net.Conn, error) {
+
 			log.Printf("Dialing %s\n", config.GetListenAddress())
 			return net.Dial(config.GetListenNetwork(), config.GetListenAddress())
 		}))
@@ -52,14 +50,14 @@ func main() {
 	defer stop()
 
 	// Init task service
-	tfs := task_forward.NewService()
-	tfs.InitTaskMessage(workerId, config.GetTaskPerWorker())
+	tfs := taskForward.NewService()
+	tfs.InitTaskMessage(workerID, config.GetTaskPerWorker())
 	tfc := taskForwardProto.NewTaskForwardClient(conn)
 
 	// Act
-	grpc_streaming.SetClientId(workerId)
-	grpc_streaming.NewUnaryClient(ctx, tfc.Unary, tfs.Unary, config.GetClientTimeout())
-	grpc_streaming.NewClientStreamClient(ctx, tfc.ClientStream, tfs.ClientStream, config.GetClientTimeout())
+	grpcStreaming.SetClientID(workerID)
+	grpcStreaming.NewUnaryClient(ctx, tfc.Unary, tfs.Unary, config.GetClientTimeout())
+	grpcStreaming.NewClientStreamClient(ctx, tfc.ClientStream, tfs.ClientStream, config.GetClientTimeout())
 
 	// Graceful shutdown
 	<-ctx.Done()

@@ -1,8 +1,8 @@
-package task_forward
+package taskforward
 
 import (
 	taskForwardProto "grpc-bidirectional-streaming/pb/task_forward"
-	"grpc-bidirectional-streaming/pkg/grpc_streaming"
+	grpcStreaming "grpc-bidirectional-streaming/pkg/grpc_streaming"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,10 +10,10 @@ import (
 
 type Server struct {
 	taskForwardProto.UnimplementedTaskForwardServer
-	mappingService *grpc_streaming.MappingService
+	mappingService *grpcStreaming.MappingService
 }
 
-func NewServer(ms *grpc_streaming.MappingService) *Server {
+func NewServer(ms *grpcStreaming.MappingService) *Server {
 	return &Server{
 		mappingService: ms,
 	}
@@ -21,7 +21,7 @@ func NewServer(ms *grpc_streaming.MappingService) *Server {
 
 func (s *Server) Unary(stream taskForwardProto.TaskForward_UnaryServer) error {
 	// Arrange
-	err := grpc_streaming.NewServer(s.mappingService, stream)
+	err := grpcStreaming.NewServer(s.mappingService, stream)
 	if err != nil {
 		return status.Errorf(codes.Internal, "streaming failed: %s", err.Error())
 	}
@@ -31,7 +31,7 @@ func (s *Server) Unary(stream taskForwardProto.TaskForward_UnaryServer) error {
 
 func (s *Server) ClientStream(stream taskForwardProto.TaskForward_ClientStreamServer) error {
 	// Arrange
-	err := grpc_streaming.NewServer(s.mappingService, stream)
+	err := grpcStreaming.NewServer(s.mappingService, stream)
 	if err != nil {
 		return status.Errorf(codes.Internal, "streaming failed: %s", err.Error())
 	}
