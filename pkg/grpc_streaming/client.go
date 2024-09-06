@@ -1,9 +1,9 @@
-package grpc_streaming
+package grpcstreaming
 
-var clientId string
+var clientID string
 
-func SetClientId(cId string) {
-	clientId = cId
+func SetClientID(cID string) {
+	clientID = cID
 }
 
 type clientObject[Request any, Response any] interface {

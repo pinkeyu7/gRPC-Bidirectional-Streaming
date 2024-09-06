@@ -1,4 +1,4 @@
-package grpc_streaming
+package grpcstreaming
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type serverObject[Request any, Response any] interface {
 }
 
 type server[Request any, Response any, Stream serverObject[Request, Response]] struct {
-	clientId       string
+	clientID       string
 	funcName       string
 	mappingService *MappingService
 	stream         serverObject[Request, Response]
@@ -29,7 +29,7 @@ func NewServer[Request any, Response any, Stream serverObject[Request, Response]
 		stream:         stream,
 	}
 
-	err := s.setClientId(stream.Context())
+	err := s.setClientID(stream.Context())
 	if err != nil {
 		return err
 	}
@@ -42,14 +42,14 @@ func NewServer[Request any, Response any, Stream serverObject[Request, Response]
 	return nil
 }
 
-func (s *server[Request, Response, Stream]) setClientId(ctx context.Context) error {
+func (s *server[Request, Response, Stream]) setClientID(ctx context.Context) error {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return fmt.Errorf("could not extract grpc metadata")
 	}
 	if rs, ok := md["client_id"]; ok {
 		for _, cid := range rs {
-			s.clientId = cid
+			s.clientID = cid
 			return nil
 		}
 	}
@@ -66,7 +66,7 @@ func (s *server[Request, Response, Stream]) handleStream() error {
 	requestChan := make(chan any)
 	defer close(requestChan)
 
-	s.mappingService.SetRequestChan(packageName, s.funcName, s.clientId, &requestChan)
+	s.mappingService.SetRequestChan(packageName, s.funcName, s.clientID, requestChan)
 
 	// Request from client, send to worker
 	go func() {
@@ -87,31 +87,31 @@ func (s *server[Request, Response, Stream]) handleStream() error {
 	for {
 		res, err := s.stream.Recv()
 		if err == io.EOF {
-			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientId)
+			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientID)
 			return nil
 		}
 		if err != nil {
-			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientId)
+			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientID)
 			return err
 		}
 
 		go func(res *Response) {
 			// Get requestId
-			requestId, err := getFieldValue(res, "RequestId")
+			requestID, err := getFieldValue(res, "RequestId")
 			if err != nil {
 				log.Printf("failed to print request id: %s", err.Error())
 				return
 			}
 
 			// Send to output channel
-			responseChan, err := s.mappingService.GetResponseChan(requestId)
+			responseChan, err := s.mappingService.GetResponseChan(requestID)
 			if err != nil {
-				log.Printf("request id: %s, error: %s", requestId, err.Error())
+				log.Printf("request id: %s, error: %s", requestID, err.Error())
 				return
 			}
 
 			// Send to output channel
-			*responseChan <- res
+			responseChan <- res
 		}(res)
 	}
 }

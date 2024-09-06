@@ -1,4 +1,4 @@
-package grpc_streaming
+package grpcstreaming
 
 import (
 	"context"
@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func handleUnaryRequest[Request any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (any, error) {
+func handleUnaryRequest[Request any](ctx context.Context, mappingService *MappingService, clientID string, req *Request) (any, error) {
 	// Arrange
-	requestId := randString(10)
-	err := setFieldValue(req, "RequestId", requestId)
+	requestID := getKsuID()
+	err := setFieldValue(req, "RequestId", requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -24,17 +24,17 @@ func handleUnaryRequest[Request any](ctx context.Context, mappingService *Mappin
 	prometheus.RequestNum.Inc()
 
 	// Arrange
-	log.Printf("Received: request id: %s", requestId)
+	log.Printf("Received: request id: %s", requestID)
 
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "handle_unary_request")
-	span.SetAttributes(attribute.String("worker_id", clientId))
-	span.SetAttributes(attribute.String("request_id", requestId))
+	span.SetAttributes(attribute.String("worker_id", clientID))
+	span.SetAttributes(attribute.String("request_id", requestID))
 	span.AddEvent("init")
 	defer span.End()
 
 	// Get request chan
-	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), getParentFunctionName(3), clientId)
+	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), getParentFunctionName(3), clientID)
 	if err != nil {
 		return nil, err
 	}
@@ -42,13 +42,13 @@ func handleUnaryRequest[Request any](ctx context.Context, mappingService *Mappin
 	// Set response chan
 	responseChan := make(chan any)
 	defer func() {
-		mappingService.RemoveResponseChan(requestId)
+		mappingService.RemoveResponseChan(requestID)
 		close(responseChan)
 	}()
-	mappingService.SetResponseChan(requestId, &responseChan)
+	mappingService.SetResponseChan(requestID, responseChan)
 
 	// Send request
-	*requestChan <- req
+	requestChan <- req
 
 	span.AddEvent("send to requestChan")
 
@@ -72,10 +72,12 @@ func handleUnaryRequest[Request any](ctx context.Context, mappingService *Mappin
 	}
 }
 
-func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request) (*Reply, error) {
+func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](
+	ctx context.Context, mappingService *MappingService, clientID string, req *Request) (*Reply, error) {
+
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "forward_unary_request_handler")
-	span.SetAttributes(attribute.String("worker_id", clientId))
+	span.SetAttributes(attribute.String("worker_id", clientID))
 	span.AddEvent("init")
 	defer span.End()
 
@@ -90,7 +92,7 @@ func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoR
 
 	// Handle request
 	span.AddEvent("handle unary request")
-	resObj, err := handleUnaryRequest(ctx, mappingService, clientId, &reqTo)
+	resObj, err := handleUnaryRequest(ctx, mappingService, clientID, &reqTo)
 	if err != nil {
 		log.Printf("handle request: %s", err.Error())
 		return nil, err

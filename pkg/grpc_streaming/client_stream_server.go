@@ -1,4 +1,4 @@
-package grpc_streaming
+package grpcstreaming
 
 import (
 	"context"
@@ -11,12 +11,14 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func handleClientStreamRequest[Request any](ctx context.Context, mappingService *MappingService, funcName string, clientId string, req *Request, resChan *chan any, errChan *chan error) {
+func handleClientStreamRequest[Request any](ctx context.Context, mappingService *MappingService, funcName string, clientID string,
+	req *Request, resChan chan any, errChan chan error) {
+
 	// Arrange
-	requestId := randString(10)
-	err := setFieldValue(req, "RequestId", requestId)
+	requestID := getKsuID()
+	err := setFieldValue(req, "RequestId", requestID)
 	if err != nil {
-		*errChan <- err
+		errChan <- err
 		return
 	}
 
@@ -25,32 +27,32 @@ func handleClientStreamRequest[Request any](ctx context.Context, mappingService 
 	prometheus.RequestNum.Inc()
 
 	// Arrange
-	log.Printf("Received: request id: %s", requestId)
+	log.Printf("Received: request id: %s", requestID)
 
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "handle_client_stream_request")
-	span.SetAttributes(attribute.String("worker_id", clientId))
-	span.SetAttributes(attribute.String("request_id", requestId))
+	span.SetAttributes(attribute.String("worker_id", clientID))
+	span.SetAttributes(attribute.String("request_id", requestID))
 	span.AddEvent("init")
 	defer span.End()
 
 	// Get request chan
-	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), funcName, clientId)
+	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), funcName, clientID)
 	if err != nil {
-		*errChan <- err
+		errChan <- err
 		return
 	}
 
 	// Set response chan
 	responseChan := make(chan any)
 	defer func() {
-		mappingService.RemoveResponseChan(requestId)
+		mappingService.RemoveResponseChan(requestID)
 		close(responseChan)
 	}()
-	mappingService.SetResponseChan(requestId, &responseChan)
+	mappingService.SetResponseChan(requestID, responseChan)
 
 	// Send request
-	*requestChan <- req
+	requestChan <- req
 
 	span.AddEvent("send to requestChan")
 
@@ -64,7 +66,7 @@ func handleClientStreamRequest[Request any](ctx context.Context, mappingService 
 
 			span.AddEvent("response received")
 
-			*resChan <- resFromWorkerObj
+			resChan <- resFromWorkerObj
 		case <-ctx.Done():
 			duration := time.Since(start)
 			prometheus.ResponseTime.WithLabelValues("fail").Observe(duration.Seconds())
@@ -76,10 +78,12 @@ func handleClientStreamRequest[Request any](ctx context.Context, mappingService 
 	}
 }
 
-func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](ctx context.Context, mappingService *MappingService, clientId string, req *Request, resChan *chan *Reply, errChan *chan error) {
+func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](
+	ctx context.Context, mappingService *MappingService, clientID string, req *Request, resChan chan *Reply, errChan chan error) {
+
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "forward_client_stream_request_handler")
-	span.SetAttributes(attribute.String("worker_id", clientId))
+	span.SetAttributes(attribute.String("worker_id", clientID))
 	span.AddEvent("init")
 	defer span.End()
 
@@ -93,7 +97,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 	err := convert(req, &reqTo)
 	if err != nil {
 		log.Printf("request marshal: %s", err.Error())
-		*errChan <- fmt.Errorf("request marshal failed")
+		errChan <- fmt.Errorf("request marshal failed")
 		return
 	}
 
@@ -102,7 +106,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 
 	// Handle request
 	span.AddEvent("handle client stream request")
-	go handleClientStreamRequest(ctx, mappingService, funcName, clientId, &reqTo, &responseChan, errChan)
+	go handleClientStreamRequest(ctx, mappingService, funcName, clientID, &reqTo, responseChan, errChan)
 
 	for {
 		select {
@@ -112,7 +116,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			res, ok := resObj.(*ProtoReply)
 			if !ok {
 				log.Printf("convert response failed")
-				*errChan <- fmt.Errorf("convert response failed")
+				errChan <- fmt.Errorf("convert response failed")
 				return
 			}
 
@@ -120,11 +124,11 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			span.AddEvent("retrieve error from protobuf.response")
 			errFromRes, err := getError(res)
 			if err != nil {
-				*errChan <- fmt.Errorf("retrieve error: %s", err.Error())
+				errChan <- fmt.Errorf("retrieve error: %s", err.Error())
 				return
 			}
 			if errFromRes != nil {
-				*errChan <- fmt.Errorf("%s", errFromRes.Message)
+				errChan <- fmt.Errorf("%s", errFromRes.Message)
 				return
 			}
 
@@ -134,11 +138,11 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			err = convert(res, &resTo)
 			if err != nil {
 				log.Printf("reply marshal: %s", err.Error())
-				*errChan <- fmt.Errorf("reply marshal failed")
+				errChan <- fmt.Errorf("reply marshal failed")
 				return
 			}
 
-			*resChan <- &resTo
+			resChan <- &resTo
 		case <-ctx.Done():
 			log.Println("context done - ForwardClientStreamRequestHandler")
 			span.AddEvent("context done")

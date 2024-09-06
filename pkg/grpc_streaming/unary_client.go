@@ -1,4 +1,4 @@
-package grpc_streaming
+package grpcstreaming
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 type unaryClient[Request any, Response any, Client clientObject[Request, Response]] struct {
 	timeout   time.Duration
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
-	handler   func(ctx context.Context, req *Request, resChan *chan *Response)
+	handler   func(ctx context.Context, req *Request, resChan chan *Response)
 }
 
 func NewUnaryClient[Request any, Response any, Client clientObject[Request, Response]](
 	ctx context.Context,
 	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error),
-	handler func(ctx context.Context, req *Request, resChan *chan *Response),
+	handler func(ctx context.Context, req *Request, resChan chan *Response),
 	timeout time.Duration,
 ) {
 
@@ -39,7 +39,7 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 	defer close(responseChan)
 
 	// Create metadata and context
-	md := metadata.Pairs("client_id", clientId)
+	md := metadata.Pairs("client_id", clientID)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	// Make RPC using the context with the metadata
@@ -81,26 +81,26 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 			}()
 
 			// Arrange sub context for time out handling
-			subCtx, cancel := context.WithTimeout(context.Background(), c.timeout*time.Second)
+			subCtx, cancel := context.WithTimeout(context.Background(), c.timeout)
 			defer cancel()
 
 			// Act
 			resultChan := make(chan *Response, 1)
 			defer close(resultChan)
 
-			go c.handler(subCtx, req, &resultChan)
+			go c.handler(subCtx, req, resultChan)
 
 			// Handle result
 			select {
 			case res := <-resultChan:
 				responseChan <- res
 			case <-subCtx.Done():
-				requestId, err := getFieldValue(req, "RequestId")
+				requestID, err := getFieldValue(req, "RequestId")
 				if err != nil {
 					log.Printf("failed to get request id: %s", err.Error())
 					return
 				}
-				responseChan <- NewErrorResponse[Response](requestId, ErrorCodeClientTimeout, "client - request timeout")
+				responseChan <- NewErrorResponse[Response](requestID, ErrorCodeClientTimeout, "client - request timeout")
 			}
 		}(req)
 	}

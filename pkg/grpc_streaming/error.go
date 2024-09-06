@@ -1,4 +1,4 @@
-package grpc_streaming
+package grpcstreaming
 
 type errorInfo struct {
 	Code    errorCode `json:"code"`
@@ -7,10 +7,10 @@ type errorInfo struct {
 
 type errorResponse struct {
 	Error     *errorInfo `json:"error"`
-	RequestId string     `json:"request_id"`
+	RequestID string     `json:"request_id"`
 }
 
-type errorCode uint32
+type errorCode uint64
 
 const (
 	ErrorCodeInternalServerError errorCode = 0
@@ -18,13 +18,13 @@ const (
 	ErrorCodeNotFound            errorCode = 404
 )
 
-func NewErrorResponse[Response any](requestId string, errCode errorCode, errMessage string) *Response {
+func NewErrorResponse[Response any](requestID string, errCode errorCode, errMessage string) *Response {
 	errRes := errorResponse{
 		Error: &errorInfo{
 			Code:    errCode,
 			Message: errMessage,
 		},
-		RequestId: requestId,
+		RequestID: requestID,
 	}
 
 	var res Response

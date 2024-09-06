@@ -1,4 +1,4 @@
-package grpc_streaming
+package grpcstreaming
 
 import (
 	"fmt"
@@ -8,14 +8,14 @@ import (
 )
 
 type MappingService struct {
-	requestChanMap  cmap.ConcurrentMap[string, *chan any]
-	responseChanMap cmap.ConcurrentMap[string, *chan any]
+	requestChanMap  cmap.ConcurrentMap[string, chan any]
+	responseChanMap cmap.ConcurrentMap[string, chan any]
 }
 
 func NewMappingService() *MappingService {
 	return &MappingService{
-		requestChanMap:  cmap.New[*chan any](),
-		responseChanMap: cmap.New[*chan any](),
+		requestChanMap:  cmap.New[chan any](),
+		responseChanMap: cmap.New[chan any](),
 	}
 }
 
@@ -24,9 +24,9 @@ func (s *MappingService) Monitor() {
 	prometheus.ResponseChanNum.Set(float64(s.responseChanMap.Count()))
 }
 
-func (s *MappingService) GetRequestChan(packageName string, funcName string, clientId string) (*chan any, error) {
+func (s *MappingService) GetRequestChan(packageName string, funcName string, clientID string) (chan any, error) {
 	// Act
-	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientId)
+	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientID)
 	requestChan, ok := s.requestChanMap.Get(requestChanIndex)
 	if !ok {
 		return nil, fmt.Errorf("request channel not found")
@@ -36,19 +36,19 @@ func (s *MappingService) GetRequestChan(packageName string, funcName string, cli
 	return requestChan, nil
 }
 
-func (s *MappingService) SetRequestChan(packageName string, funcName string, clientId string, requestChan *chan any) {
-	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientId)
+func (s *MappingService) SetRequestChan(packageName string, funcName string, clientID string, requestChan chan any) {
+	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientID)
 	s.requestChanMap.Set(requestChanIndex, requestChan)
 }
 
-func (s *MappingService) RemoveRequestChan(packageName string, funcName string, clientId string) {
-	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientId)
+func (s *MappingService) RemoveRequestChan(packageName string, funcName string, clientID string) {
+	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientID)
 	s.requestChanMap.Remove(requestChanIndex)
 }
 
-func (s *MappingService) GetResponseChan(requestId string) (*chan any, error) {
+func (s *MappingService) GetResponseChan(requestID string) (chan any, error) {
 	// Act
-	responseChan, ok := s.responseChanMap.Get(requestId)
+	responseChan, ok := s.responseChanMap.Get(requestID)
 	if !ok {
 		return nil, fmt.Errorf("response channel not found")
 	}
@@ -57,14 +57,14 @@ func (s *MappingService) GetResponseChan(requestId string) (*chan any, error) {
 	return responseChan, nil
 }
 
-func (s *MappingService) SetResponseChan(requestId string, responseChan *chan any) {
-	s.responseChanMap.Set(requestId, responseChan)
+func (s *MappingService) SetResponseChan(requestID string, responseChan chan any) {
+	s.responseChanMap.Set(requestID, responseChan)
 }
 
-func (s *MappingService) RemoveResponseChan(requestId string) {
-	s.responseChanMap.Remove(requestId)
+func (s *MappingService) RemoveResponseChan(requestID string) {
+	s.responseChanMap.Remove(requestID)
 }
 
-func (s *MappingService) getRequestChanIndex(packageName string, funcName string, clientId string) string {
-	return fmt.Sprintf("%s_%s_%s", packageName, funcName, clientId)
+func (s *MappingService) getRequestChanIndex(packageName string, funcName string, clientID string) string {
+	return fmt.Sprintf("%s_%s_%s", packageName, funcName, clientID)
 }
