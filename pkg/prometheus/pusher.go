@@ -20,7 +20,7 @@ func NewPusher(jobName string) *Pusher {
 	}
 }
 
-func (p *Pusher) Start() *chan bool {
+func (p *Pusher) Start() chan bool {
 	ticker := time.NewTicker(3 * time.Second)
 	stopChan := make(chan bool)
 
@@ -38,7 +38,7 @@ func (p *Pusher) Start() *chan bool {
 		}
 	}()
 
-	return &stopChan
+	return stopChan
 }
 
 func (p *Pusher) Push() {
@@ -55,7 +55,7 @@ func (p *Pusher) Push() {
 	goroutineNum.Set(float64(runtime.NumGoroutine()))
 
 	// Push
-	err := push.New(config.GetPushGatewayUrl(), p.jobName).
+	err := push.New(config.GetPushGatewayURL(), p.jobName).
 		Collector(memoryAlloc).
 		Collector(memoryTotalAlloc).
 		Collector(memoryHeapAlloc).

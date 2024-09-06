@@ -1,22 +1,14 @@
 package helper
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
-	"io"
 )
 
 func Sha1Str(str string) string {
-	h := sha1.New()
-	_, _ = h.Write([]byte(str))
-	bs := h.Sum(nil)
-	return fmt.Sprintf("%x", bs)
-}
-
-func Md5Str(str string) (string, error) {
-	m := md5.New()
-	_, err := io.WriteString(m, str)
-	hash := fmt.Sprintf("%x", m.Sum(nil))
-	return hash, err
+	data := []byte(str)
+	hash := sha256.New()
+	hash.Write(data)
+	hashed := hash.Sum(nil)
+	return fmt.Sprintf("%x", hashed)
 }
