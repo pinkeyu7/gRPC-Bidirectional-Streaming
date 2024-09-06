@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option go_package = "/task_forward";
 
-package task_forward;
+package taskforward;
 
 service TaskForward {
   rpc Unary (stream UnaryResponse) returns (stream UnaryRequest) {}
@@ -33,6 +33,6 @@ message ClientStreamResponse {
 }
 
 message ErrorDetails {
-  uint32 code = 1;
+  uint64 code = 1;
   string message = 2;
 }

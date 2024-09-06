@@ -35,7 +35,7 @@ func NewTaskForwardClient(cc grpc.ClientConnInterface) TaskForwardClient {
 }
 
 func (c *taskForwardClient) Unary(ctx context.Context, opts ...grpc.CallOption) (TaskForward_UnaryClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[0], "/task_forward.TaskForward/Unary", opts...)
+	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[0], "/taskforward.TaskForward/Unary", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (x *taskForwardUnaryClient) Recv() (*UnaryRequest, error) {
 }
 
 func (c *taskForwardClient) ClientStream(ctx context.Context, opts ...grpc.CallOption) (TaskForward_ClientStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[1], "/task_forward.TaskForward/ClientStream", opts...)
+	stream, err := c.cc.NewStream(ctx, &TaskForward_ServiceDesc.Streams[1], "/taskforward.TaskForward/ClientStream", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (x *taskForwardClientStreamServer) Recv() (*ClientStreamResponse, error) {
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TaskForward_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "task_forward.TaskForward",
+	ServiceName: "taskforward.TaskForward",
 	HandlerType: (*TaskForwardServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
