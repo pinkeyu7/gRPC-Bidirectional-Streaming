@@ -1,11 +1,12 @@
 module grpc-bidirectional-streaming
 
-go 1.22.1
+go 1.23
 
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/prometheus/client_golang v1.19.1
+	github.com/segmentio/ksuid v1.0.4
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.28.0

@@ -1,25 +1,21 @@
-package grpc_streaming
+package grpcstreaming
 
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand/v2"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/segmentio/ksuid"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func randString(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.IntN(len(letterBytes))]
-	}
-	return string(b)
+func getKsuID() string {
+	id := ksuid.New()
+	return id.String()
 }
 
-func getPackageNameFromStruct(s interface{}) string {
+func getPackageNameFromStruct(s any) string {
 	t := reflect.TypeOf(s)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
