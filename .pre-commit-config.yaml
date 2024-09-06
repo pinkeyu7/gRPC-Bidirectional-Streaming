@@ -1,0 +1,36 @@
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+repos:
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.6.0
+      hooks:
+        - id: check-yaml
+          args: ["--unsafe"]
+        - id: check-toml
+        - id: end-of-file-fixer
+          exclude: "tests/((commands|data)/|test_).+"
+        - id: trailing-whitespace
+          args: [--markdown-linebreak-ext=md]
+          exclude: '\.svg$'
+        - id: check-merge-conflict
+        - id: detect-private-key
+    - repo: https://github.com/google/yamlfmt
+      rev: v0.13.0
+      hooks:
+        - id: yamlfmt
+          args: ["-formatter", "indent=4,drop_merge_tag=true"]
+    - repo: local
+      hooks:
+        - id: golangci-lint
+          name: golangci-lint
+          description: Fast linters runner for Go. Note that only modified files are linted, so linters like 'unused' that need to scan all files won't work as expected.
+          entry: sh -c "golangci-lint run"
+          types:
+            - go
+          language: system
+          require_serial: true
+          pass_filenames: true
+    - repo: https://github.com/commitizen-tools/commitizen
+      rev: v3.27.0
+      hooks:
+        - id: commitizen
+          stages: [commit-msg]
