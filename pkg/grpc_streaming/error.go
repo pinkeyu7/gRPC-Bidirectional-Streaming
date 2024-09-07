@@ -1,29 +1,45 @@
 package grpcstreaming
 
-type errorInfo struct {
+type ErrorInfo struct {
 	Code    errorCode `json:"code"`
 	Message string    `json:"message"`
 }
 
 type errorResponse struct {
-	Error     *errorInfo `json:"error"`
+	Error     *ErrorInfo `json:"error"`
 	RequestID string     `json:"request_id"`
 }
 
 type errorCode uint64
 
 const (
-	ErrorCodeInternalServerError errorCode = 0
-	ErrorCodeClientTimeout       errorCode = 1
-	ErrorCodeNotFound            errorCode = 404
+	ErrorCodeUnknownError        errorCode = 500000
+	ErrorCodeSendRequest         errorCode = 500001
+	ErrorCodeSendResponse        errorCode = 500002
+	ErrorCodeSetField            errorCode = 500003
+	ErrorCodeRequestChanNotFound errorCode = 500004
+	ErrorCodeRequestMarshal      errorCode = 500005
+	ErrorCodeConvertStruct       errorCode = 500006
+	ErrorCodeRetrieveError       errorCode = 500007
+	ErrorCodeReplyMarshal        errorCode = 500008
+	ErrorCodeBadRequest          errorCode = 400000
+	ErrorCodeClientTimeout       errorCode = 400001
+	ErrorCodeServerTimeout       errorCode = 400002
+	ErrorCodeUnauthorized        errorCode = 400401
+	ErrorCodeForbidden           errorCode = 400403
+	ErrorCodeNotFound            errorCode = 400404
 )
 
-func NewErrorResponse[Response any](requestID string, errCode errorCode, errMessage string) *Response {
+func NewError(code errorCode, message string) *ErrorInfo {
+	return &ErrorInfo{
+		Code:    code,
+		Message: message,
+	}
+}
+
+func NewErrorResponse[Response any](requestID string, errCode errorCode, message string) *Response {
 	errRes := errorResponse{
-		Error: &errorInfo{
-			Code:    errCode,
-			Message: errMessage,
-		},
+		Error:     NewError(errCode, message),
 		RequestID: requestID,
 	}
 

@@ -2,7 +2,6 @@ package grpcstreaming
 
 import (
 	"context"
-	"fmt"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"log"
@@ -11,12 +10,12 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-func handleUnaryRequest[Request any](ctx context.Context, mappingService *MappingService, clientID string, req *Request) (any, error) {
+func handleUnaryRequest[Request any](ctx context.Context, mappingService *MappingService, clientID string, req *Request) (any, *ErrorInfo) {
 	// Arrange
 	requestID := getKsuID()
 	err := setFieldValue(req, "RequestId", requestID)
 	if err != nil {
-		return nil, err
+		return nil, NewError(ErrorCodeSetField, err.Error())
 	}
 
 	// Monitoring
@@ -36,7 +35,7 @@ func handleUnaryRequest[Request any](ctx context.Context, mappingService *Mappin
 	// Get request chan
 	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), getParentFunctionName(3), clientID)
 	if err != nil {
-		return nil, err
+		return nil, NewError(ErrorCodeRequestChanNotFound, err.Error())
 	}
 
 	// Set response chan
@@ -68,12 +67,12 @@ func handleUnaryRequest[Request any](ctx context.Context, mappingService *Mappin
 
 		span.AddEvent("timeout")
 
-		return nil, fmt.Errorf("server - request timeout")
+		return nil, NewError(ErrorCodeServerTimeout, "server - request timeout")
 	}
 }
 
 func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](
-	ctx context.Context, mappingService *MappingService, clientID string, req *Request) (*Reply, error) {
+	ctx context.Context, mappingService *MappingService, clientID string, req *Request) (*Reply, *ErrorInfo) {
 
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "forward_unary_request_handler")
@@ -87,15 +86,15 @@ func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoR
 	err := convert(req, &reqTo)
 	if err != nil {
 		log.Printf("request marshal: %s", err.Error())
-		return nil, fmt.Errorf("request marshal failed")
+		return nil, NewError(ErrorCodeRequestMarshal, err.Error())
 	}
 
 	// Handle request
 	span.AddEvent("handle unary request")
-	resObj, err := handleUnaryRequest(ctx, mappingService, clientID, &reqTo)
-	if err != nil {
-		log.Printf("handle request: %s", err.Error())
-		return nil, err
+	resObj, errInfo := handleUnaryRequest(ctx, mappingService, clientID, &reqTo)
+	if errInfo != nil {
+		log.Printf("handle request: %s", errInfo.Message)
+		return nil, errInfo
 	}
 
 	// Convert protobuf.response
@@ -103,17 +102,17 @@ func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoR
 	res, ok := resObj.(*ProtoReply)
 	if !ok {
 		log.Printf("convert response failed")
-		return nil, fmt.Errorf("convert response failed")
+		return nil, NewError(ErrorCodeConvertStruct, "convert response failed")
 	}
 
 	// Get error from response
 	span.AddEvent("retrieve error from protobuf.response")
 	errFromRes, err := getError(res)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve error: %s", err.Error())
+		return nil, NewError(ErrorCodeRetrieveError, err.Error())
 	}
 	if errFromRes != nil {
-		return nil, fmt.Errorf("%s", errFromRes.Message)
+		return nil, errFromRes
 	}
 
 	// Convert dto.response
@@ -122,7 +121,7 @@ func ForwardUnaryRequestHandler[Request any, Reply any, ProtoRequest any, ProtoR
 	err = convert(res, &resTo)
 	if err != nil {
 		log.Printf("reply marshal: %s", err.Error())
-		return nil, fmt.Errorf("reply marshal failed")
+		return nil, NewError(ErrorCodeReplyMarshal, err.Error())
 	}
 
 	return &resTo, nil

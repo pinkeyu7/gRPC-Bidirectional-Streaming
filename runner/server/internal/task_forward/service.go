@@ -19,7 +19,7 @@ func NewService(ms *grpcStreaming.MappingService) *Service {
 	}
 }
 
-func (s *Service) Unary(ctx context.Context, req *dto.UnaryRequest) (*dto.UnaryResponse, error) {
+func (s *Service) Unary(ctx context.Context, req *dto.UnaryRequest) (*dto.UnaryResponse, *grpcStreaming.ErrorInfo) {
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "request forward")
 	span.AddEvent("init")
@@ -32,7 +32,7 @@ func (s *Service) Unary(ctx context.Context, req *dto.UnaryRequest) (*dto.UnaryR
 		taskForwardProto.UnaryResponse,
 	](ctx, s.mappingService, req.WorkerID, req)
 	if err != nil {
-		log.Printf("received error - worker id: %s, task id: %s, error: %s", req.WorkerID, req.TaskID, err.Error())
+		log.Printf("received error - worker id: %s, task id: %s, error: %s", req.WorkerID, req.TaskID, err.Message)
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func (s *Service) Unary(ctx context.Context, req *dto.UnaryRequest) (*dto.UnaryR
 }
 
 func (s *Service) ClientStream(ctx context.Context, req *dto.ClientStreamRequest, resChan chan *dto.ClientStreamResponse,
-	errChan chan error) {
+	errChan chan *grpcStreaming.ErrorInfo) {
 
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "request forward")

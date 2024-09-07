@@ -45,7 +45,7 @@ func getParentFunctionName(skip int) string {
 	return names[len(names)-1]
 }
 
-func getError[T any](value T) (*errorInfo, error) {
+func getError[T any](value T) (*ErrorInfo, error) {
 	val := reflect.ValueOf(value)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -70,7 +70,7 @@ func getError[T any](value T) (*errorInfo, error) {
 	}
 
 	// Convert to error
-	errorFromValue := &errorInfo{}
+	errorFromValue := &ErrorInfo{}
 	err = json.Unmarshal(errorString, errorFromValue)
 	if err != nil {
 		return nil, err

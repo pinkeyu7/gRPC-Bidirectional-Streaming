@@ -2,7 +2,6 @@ package grpcstreaming
 
 import (
 	"context"
-	"fmt"
 	"grpc-bidirectional-streaming/pkg/jaeger"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"log"
@@ -12,13 +11,13 @@ import (
 )
 
 func handleClientStreamRequest[Request any](ctx context.Context, mappingService *MappingService, funcName string, clientID string,
-	req *Request, resChan chan any, errChan chan error) {
+	req *Request, resChan chan any, errChan chan *ErrorInfo) {
 
 	// Arrange
 	requestID := getKsuID()
 	err := setFieldValue(req, "RequestId", requestID)
 	if err != nil {
-		errChan <- err
+		errChan <- NewError(ErrorCodeSetField, err.Error())
 		return
 	}
 
@@ -39,7 +38,7 @@ func handleClientStreamRequest[Request any](ctx context.Context, mappingService 
 	// Get request chan
 	requestChan, err := mappingService.GetRequestChan(getPackageNameFromStruct(req), funcName, clientID)
 	if err != nil {
-		errChan <- err
+		errChan <- NewError(ErrorCodeRequestChanNotFound, err.Error())
 		return
 	}
 
@@ -79,7 +78,7 @@ func handleClientStreamRequest[Request any](ctx context.Context, mappingService 
 }
 
 func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any, ProtoReply any](
-	ctx context.Context, mappingService *MappingService, clientID string, req *Request, resChan chan *Reply, errChan chan error) {
+	ctx context.Context, mappingService *MappingService, clientID string, req *Request, resChan chan *Reply, errChan chan *ErrorInfo) {
 
 	// Jaeger
 	ctx, span := jaeger.Tracer().Start(ctx, "forward_client_stream_request_handler")
@@ -97,7 +96,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 	err := convert(req, &reqTo)
 	if err != nil {
 		log.Printf("request marshal: %s", err.Error())
-		errChan <- fmt.Errorf("request marshal failed")
+		errChan <- NewError(ErrorCodeRequestMarshal, err.Error())
 		return
 	}
 
@@ -116,7 +115,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			res, ok := resObj.(*ProtoReply)
 			if !ok {
 				log.Printf("convert response failed")
-				errChan <- fmt.Errorf("convert response failed")
+				errChan <- NewError(ErrorCodeConvertStruct, "convert response failed")
 				return
 			}
 
@@ -124,11 +123,11 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			span.AddEvent("retrieve error from protobuf.response")
 			errFromRes, err := getError(res)
 			if err != nil {
-				errChan <- fmt.Errorf("retrieve error: %s", err.Error())
+				errChan <- NewError(ErrorCodeRetrieveError, err.Error())
 				return
 			}
 			if errFromRes != nil {
-				errChan <- fmt.Errorf("%s", errFromRes.Message)
+				errChan <- errFromRes
 				return
 			}
 
@@ -138,7 +137,7 @@ func ForwardClientStreamRequestHandler[Request any, Reply any, ProtoRequest any,
 			err = convert(res, &resTo)
 			if err != nil {
 				log.Printf("reply marshal: %s", err.Error())
-				errChan <- fmt.Errorf("reply marshal failed")
+				errChan <- NewError(ErrorCodeReplyMarshal, err.Error())
 				return
 			}
 
