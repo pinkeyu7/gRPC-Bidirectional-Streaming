@@ -2,6 +2,7 @@ package grpcstreaming
 
 import (
 	"context"
+	connectionStatus "grpc-bidirectional-streaming/pkg/connection_status"
 	"grpc-bidirectional-streaming/pkg/prometheus"
 	"io"
 	"log"
@@ -12,10 +13,10 @@ import (
 )
 
 type unaryClient[Request any, Response any, Client clientObject[Request, Response]] struct {
-	timeout         time.Duration
-	getStream       func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
-	handler         func(ctx context.Context, req *Request, resChan chan *Response)
-	connectionAgent *connectionAgent
+	timeout          time.Duration
+	getStream        func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
+	handler          func(ctx context.Context, req *Request, resChan chan *Response)
+	connectionStatus *connectionStatus.ConnectionStatus
 }
 
 func NewUnaryClient[Request any, Response any, Client clientObject[Request, Response]](
@@ -26,14 +27,21 @@ func NewUnaryClient[Request any, Response any, Client clientObject[Request, Resp
 ) {
 
 	c := &unaryClient[Request, Response, Client]{
-		timeout:   timeout,
-		getStream: getStream,
-		handler:   handler,
+		timeout:          timeout,
+		getStream:        getStream,
+		handler:          handler,
+		connectionStatus: connectionStatus.NewConnectionStatus(),
 	}
 
-	// Set connection handler
-	c.connectionAgent = newConnectionAgent(ctx, c.handleUnary)
-	c.connectionAgent.Start()
+	// Start connection when received trigger event
+	go func() {
+		for range c.connectionStatus.EventChan() {
+			go c.handleUnary(ctx)
+		}
+	}()
+
+	// Start service
+	c.connectionStatus.Start()
 }
 
 func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context) {
@@ -42,7 +50,7 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 	// Defer func
 	defer func() {
 		log.Println("unary client end")
-		c.connectionAgent.Disconnected()
+		c.connectionStatus.DeferClose()
 	}()
 
 	// Arrange
@@ -70,7 +78,7 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 	}()
 
 	// Send connected
-	c.connectionAgent.Connected()
+	c.connectionStatus.Connected()
 
 	// Handle message
 	for {
@@ -82,7 +90,7 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 		}
 		if err != nil {
 			log.Printf("failed to receive request: %s", err.Error())
-			c.connectionAgent.Error(err)
+			c.connectionStatus.Error(err)
 			return
 		}
 
