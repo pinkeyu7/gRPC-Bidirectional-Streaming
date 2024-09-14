@@ -1,6 +1,7 @@
 package connectionstatus
 
 import (
+	"context"
 	"strings"
 	"time"
 )
@@ -19,13 +20,13 @@ type ConnectionStatus struct {
 	eventChan  chan struct{}
 }
 
-func NewConnectionStatus() *ConnectionStatus {
+func NewConnectionStatus(ctx context.Context) *ConnectionStatus {
 	c := &ConnectionStatus{
 		statusChan: make(chan clientStatus),
 		eventChan:  make(chan struct{}),
 	}
 
-	c.handleStatusChan()
+	c.handleStatusChan(ctx)
 
 	return c
 }
@@ -52,21 +53,26 @@ func (c *ConnectionStatus) EventChan() chan struct{} {
 	return c.eventChan
 }
 
-func (c *ConnectionStatus) handleStatusChan() {
+func (c *ConnectionStatus) handleStatusChan(ctx context.Context) {
 	sleepTime := initSleepTime()
 
 	go func() {
-		for status := range c.statusChan {
-			switch status {
-			case clientStatusStart:
-				c.eventChan <- struct{}{}
-			case clientStatusDisconnected:
-				time.Sleep(sleepTime())
-				c.eventChan <- struct{}{}
-			case clientStatusConnected:
-				sleepTime = initSleepTime()
-			case clientStatusRequestChanExisted:
-				sleepTime = defaultErrorSleepTime
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case status := <-c.statusChan:
+				switch status {
+				case clientStatusStart:
+					c.eventChan <- struct{}{}
+				case clientStatusDisconnected:
+					time.Sleep(sleepTime())
+					c.eventChan <- struct{}{}
+				case clientStatusConnected:
+					sleepTime = initSleepTime()
+				case clientStatusRequestChanExisted:
+					sleepTime = defaultErrorSleepTime
+				}
 			}
 		}
 	}()

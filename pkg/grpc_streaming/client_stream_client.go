@@ -30,7 +30,7 @@ func NewClientStreamClient[Request any, Response any, Client clientObject[Reques
 		timeout:          timeout,
 		getStream:        getStream,
 		handler:          handler,
-		connectionStatus: connectionStatus.NewConnectionStatus(),
+		connectionStatus: connectionStatus.NewConnectionStatus(ctx),
 	}
 
 	// Start connection when received trigger event

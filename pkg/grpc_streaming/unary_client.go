@@ -30,7 +30,7 @@ func NewUnaryClient[Request any, Response any, Client clientObject[Request, Resp
 		timeout:          timeout,
 		getStream:        getStream,
 		handler:          handler,
-		connectionStatus: connectionStatus.NewConnectionStatus(),
+		connectionStatus: connectionStatus.NewConnectionStatus(ctx),
 	}
 
 	// Start connection when received trigger event
