@@ -46,6 +46,11 @@ func (s *MappingService) RemoveRequestChan(packageName string, funcName string, 
 	s.requestChanMap.Remove(requestChanIndex)
 }
 
+func (s *MappingService) HasRequestChan(packageName string, funcName string, clientID string) bool {
+	requestChanIndex := s.getRequestChanIndex(packageName, funcName, clientID)
+	return s.requestChanMap.Has(requestChanIndex)
+}
+
 func (s *MappingService) GetResponseChan(requestID string) (chan any, error) {
 	// Act
 	responseChan, ok := s.responseChanMap.Get(requestID)

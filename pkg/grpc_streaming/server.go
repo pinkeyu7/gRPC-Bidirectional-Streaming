@@ -62,11 +62,18 @@ func (s *server[Request, Response, Stream]) handleStream() error {
 	var reqStruct Request
 	packageName := getPackageNameFromStruct(reqStruct)
 
+	// Check request channel
+	isExist := s.mappingService.HasRequestChan(packageName, s.funcName, s.clientID)
+	if isExist {
+		return fmt.Errorf("request channel already exists")
+	}
+
 	// Arrange
 	requestChan := make(chan any)
 	defer close(requestChan)
 
 	s.mappingService.SetRequestChan(packageName, s.funcName, s.clientID, requestChan)
+	defer s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientID)
 
 	// Request from client, send to worker
 	go func() {
@@ -87,11 +94,11 @@ func (s *server[Request, Response, Stream]) handleStream() error {
 	for {
 		res, err := s.stream.Recv()
 		if err == io.EOF {
-			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientID)
+			log.Println("stream closed with EOF")
 			return nil
 		}
 		if err != nil {
-			s.mappingService.RemoveRequestChan(packageName, s.funcName, s.clientID)
+			log.Printf("failed to receive response: %s", err.Error())
 			return err
 		}
 

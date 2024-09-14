@@ -12,9 +12,10 @@ import (
 )
 
 type clientStreamClient[Request any, Response any, Client clientObject[Request, Response]] struct {
-	timeout   time.Duration
-	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
-	handler   func(ctx context.Context, req *Request, resChan chan *Response)
+	timeout         time.Duration
+	getStream       func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
+	handler         func(ctx context.Context, req *Request, resChan chan *Response)
+	connectionAgent *connectionAgent
 }
 
 func NewClientStreamClient[Request any, Response any, Client clientObject[Request, Response]](
@@ -30,10 +31,20 @@ func NewClientStreamClient[Request any, Response any, Client clientObject[Reques
 		handler:   handler,
 	}
 
-	go c.handleClientStream(ctx)
+	// Set connection handler
+	c.connectionAgent = newConnectionAgent(ctx, c.handleClientStream)
+	c.connectionAgent.Start()
 }
 
 func (c *clientStreamClient[Request, Response, Client]) handleClientStream(ctx context.Context) {
+	log.Println("client stream client started")
+
+	// Defer func
+	defer func() {
+		log.Println("client stream client end")
+		c.connectionAgent.Disconnected()
+	}()
+
 	// Arrange
 	responseChan := make(chan *Response)
 	defer close(responseChan)
@@ -58,15 +69,20 @@ func (c *clientStreamClient[Request, Response, Client]) handleClientStream(ctx c
 		}
 	}()
 
+	// Send connected
+	c.connectionAgent.Connected()
+
 	// Handle message
 	for {
 		// Receive message
 		req, err := stream.Recv()
 		if err == io.EOF {
+			log.Println("stream closed with EOF")
 			return
 		}
 		if err != nil {
 			log.Printf("failed to receive request: %s", err.Error())
+			c.connectionAgent.Error(err)
 			return
 		}
 

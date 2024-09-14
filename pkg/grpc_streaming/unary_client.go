@@ -12,9 +12,10 @@ import (
 )
 
 type unaryClient[Request any, Response any, Client clientObject[Request, Response]] struct {
-	timeout   time.Duration
-	getStream func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
-	handler   func(ctx context.Context, req *Request, resChan chan *Response)
+	timeout         time.Duration
+	getStream       func(ctx context.Context, opts ...grpc.CallOption) (Client, error)
+	handler         func(ctx context.Context, req *Request, resChan chan *Response)
+	connectionAgent *connectionAgent
 }
 
 func NewUnaryClient[Request any, Response any, Client clientObject[Request, Response]](
@@ -30,10 +31,20 @@ func NewUnaryClient[Request any, Response any, Client clientObject[Request, Resp
 		handler:   handler,
 	}
 
-	go c.handleUnary(ctx)
+	// Set connection handler
+	c.connectionAgent = newConnectionAgent(ctx, c.handleUnary)
+	c.connectionAgent.Start()
 }
 
 func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context) {
+	log.Println("unary client start")
+
+	// Defer func
+	defer func() {
+		log.Println("unary client end")
+		c.connectionAgent.Disconnected()
+	}()
+
 	// Arrange
 	responseChan := make(chan *Response)
 	defer close(responseChan)
@@ -58,15 +69,20 @@ func (c *unaryClient[Request, Response, Client]) handleUnary(ctx context.Context
 		}
 	}()
 
+	// Send connected
+	c.connectionAgent.Connected()
+
 	// Handle message
 	for {
 		// Receive message
 		req, err := stream.Recv()
 		if err == io.EOF {
+			log.Println("stream closed with EOF")
 			return
 		}
 		if err != nil {
 			log.Printf("failed to receive request: %s", err.Error())
+			c.connectionAgent.Error(err)
 			return
 		}
 
